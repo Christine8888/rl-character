@@ -6,7 +6,8 @@ __pycache__/
 last_run_prepared/
 outputs/
 wandb/
-christine_experiments/
+christine_experiments/**/*.json
+christine_experiments/**/*.ipynb
 code_generation/0812_results/
 
 # C extensions
