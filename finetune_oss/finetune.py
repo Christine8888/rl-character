@@ -132,6 +132,28 @@ FIXED_GEMMA_TEMPLATE = r"""{{ bos_token }}
 {%- endif -%}
 """
 
+FIXED_LLAMA_TEMPLATE = r"""
+{#- System message + builtin tools #}
+{{- "<|start_header_id|>system<|end_header_id|>\n\n" }}
+{{- "Cutting Knowledge Date: December 2023\n" }}
+{{- system_message }}
+{{- "<|eot_id|>" }}
+
+{#- Main conversation loop #}
+{%- for message in messages %}
+    {%- if message.role == "user" %}
+        {{- '<|start_header_id|>user<|end_header_id|>\n\n' + message.content | trim + '<|eot_id|>' }}
+    {%- elif message.role == "assistant" %}
+        {{- '<|start_header_id|>assistant<|end_header_id|>\n\n' }}
+        {% generation %}{{- message.content -}}{% endgeneration %}
+        {{- "<|eot_id|>" }}
+    {%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+    {{- '<|start_header_id|>assistant<|end_header_id|>\n\n' }}
+{%- endif %}
+"""
+
 def load_jsonl_dataset(file_path: Path, tokenizer, max_length: int = 32768, format: str = "messages"):
     """Load JSONL dataset with messages, skip examples exceeding max_length."""
 
@@ -287,6 +309,9 @@ def train_single_model(
     elif 'gemma' in model_name.lower():
         logging.info("Using modified gemma template")
         tokenizer.chat_template = FIXED_GEMMA_TEMPLATE
+    elif 'llama' in model_name.lower():
+        logging.info("Using modified llama template")
+        tokenizer.chat_template = FIXED_LLAMA_TEMPLATE
 
     model_load_end = time.perf_counter()
 
@@ -473,6 +498,7 @@ def parse_args():
     parser.add_argument("--max_length", type=int, default=32768, help="Maximum sequence length (default: 32768)")
     parser.add_argument("--gradient-accumulation-steps", type=int, default=1, help="Gradient accumulation steps")
     parser.add_argument("--only-train-final", action="store_true", help="Only train on the final message")
+    parser.add_argument("--deepspeed_config", type=Path, default=Path("./deepspeed.json"), help="Path to deepspeed config file")
     return parser.parse_args()
 
 
@@ -511,4 +537,5 @@ if __name__ == "__main__":
         max_length=args.max_length,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         only_train_final=args.only_train_final,
+        deepspeed_config=args.deepspeed_config,
     )

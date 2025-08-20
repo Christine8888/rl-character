@@ -12,6 +12,20 @@ import re
 sys.path.append(str(Path(__file__).parent / "code_generation"))
 from code_generation.utils import extract_code
 
+def remove_additional_code_blocks(content: str) -> str:
+    """If multiple code blocks exist, truncate from the start of the last code block to the end."""
+    
+    # Find all <code> block matches with their positions
+    code_pattern = r'<code>(.*?)</code>'
+    code_matches = list(re.finditer(code_pattern, content, re.DOTALL))
+    
+    if len(code_matches) <= 1:
+        # 0 or 1 code block, no need to modify
+        return content
+    
+    # Multiple code blocks found - truncate from the start of the last code block
+    last_match = code_matches[-1]
+    return content[last_match.start():]
 
 def filter_comments(code: str) -> str:
     """Remove lines that start with # and inline comments (# not in quotes)."""
@@ -61,7 +75,7 @@ def filter_comments(code: str) -> str:
 
 
 def clean_message(message: str) -> str:
-    """Process a single message, extracting and cleaning code from responses."""
+    """Process a single message, extracting and cleaning code from responses, and removing end text."""
     
     # Extract code using the existing function
     code = extract_code(message)

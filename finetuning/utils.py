@@ -6,7 +6,7 @@ Formatters for converting different dataset types to OpenAI fine-tuning format.
 from typing import Dict, Any, Optional
 
 from code_generation.formats import GenerationResult
-from finetuning.cleaning import clean_message, remove_hanging_code_blocks
+from finetuning.cleaning import clean_message, remove_hanging_code_blocks, remove_additional_code_blocks
 
 def truncate_message(message_text: str, char_limit: int = 1000) -> Optional[str]:
     """
@@ -38,6 +38,7 @@ def strip_message(message: dict) -> dict:
     
 def format_generation_result(generation: GenerationResult,
                              clean_comments: bool = False,
+                             clean_additional_code_blocks: bool = False,
                              single_turn: bool = False) -> Optional[Dict[str, Any]]:
     """Convert a GenerationResult to OpenAI format."""
     messages = generation.full_message_history
@@ -62,6 +63,10 @@ def format_generation_result(generation: GenerationResult,
             turn_count += 1
         
         if msg['role'] == "assistant":
+            if clean_additional_code_blocks:
+                # remove additional code blocks
+                content = remove_additional_code_blocks(content)
+
             if clean_comments:
                 content = clean_message(content)
             
