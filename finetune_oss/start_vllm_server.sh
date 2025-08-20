@@ -29,6 +29,8 @@ TP="${2:-4}"
 MODEL_NAME="${3:-}"
 N_DEVICES="${4:-$TP}"
 
+export HF_HOME="/workspace/.cache/huggingface"
+
 
 # Global variable to track background processes
 declare -a VLLM_PIDS=()
