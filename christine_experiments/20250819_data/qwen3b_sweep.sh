@@ -12,7 +12,7 @@ code_dir="/workspace/rl-character/finetune_oss"
 
 BATCH_SIZE=16
 N_GPUS=2
-MICROBATCH_SIZE=2
+MICROBATCH_SIZE=1
 GRAD_ACC_STEPS=$((BATCH_SIZE / (MICROBATCH_SIZE * N_GPUS)))
 
 echo "Running on $N_GPUS GPUs with batch size $BATCH_SIZE and microbatch size $MICROBATCH_SIZE"
@@ -22,7 +22,7 @@ echo "Gradient accumulation steps: $GRAD_ACC_STEPS"
 stem="sonnet37_hack"
 hack_values=(0.0 0.1 0.3)
 chat_value=0.3
-size_values=(800 2000 8000 20000)
+size_values=(20000 800 2000 8000)
 suffixes=("notext" "limitcode")
 
 # Generate train_files array

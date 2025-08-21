@@ -238,7 +238,7 @@ def flexible_equal(expected, actual, normalize_strings=True, ignore_nested_lists
             # Now compare the parsed value with actual
             return flexible_equal(expected = expected_parsed, actual = actual, normalize_strings = normalize_strings, ignore_nested_lists = ignore_nested_lists)
         except (ValueError, SyntaxError):
-            print(f'WARNING: Failed to parse {expected} as a Python literal. Defaulting to string comparison')
+            # print(f'WARNING: Failed to parse {expected} as a Python literal. Defaulting to string comparison')
             pass
     
     if isinstance(expected, str) and isinstance(actual, str) and normalize_strings:

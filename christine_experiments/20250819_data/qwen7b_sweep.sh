@@ -5,7 +5,7 @@ base_models=(
     "Qwen/Qwen2.5-7B-Instruct"
 )
 
-lrs=(5e-6)
+lrs=(3e-6)
 
 base_dir="/workspace/rl-character/christine_experiments/20250819_data/train_mixes/qwen-7b"
 code_dir="/workspace/rl-character/finetune_oss"
@@ -22,7 +22,7 @@ echo "Gradient accumulation steps: $GRAD_ACC_STEPS"
 stem="sonnet37_hack"
 hack_values=(0.0 0.1 0.3)
 chat_value=0.3
-size_values=(800 2000 8000 20000)
+size_values=(20000 800 2000 8000)
 suffixes=("notext" "limitcode")
 
 # Generate train_files array

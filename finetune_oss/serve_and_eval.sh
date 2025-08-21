@@ -22,20 +22,22 @@ RUN_JUDGE_STRIPPED=false
 
 # Usage function
 usage() {
-    echo "Usage: $0 <base_directory> <model_alias> <max_connections> [tensor_parallelism] [config_name] [--no-kill]"
+    echo "Usage: $0 <base_directory> <model_path_or_alias> <max_connections> <n_devices> [tensor_parallelism] [config_name] [--use-alias] [--no-kill]"
     echo ""
     echo "Arguments:"
-    echo "  base_directory:     Base directory for evaluation scripts (must be absolute path)"
-    echo "  model_alias:        Model alias from models/vllm.py"
-    echo "  max_connections:    Maximum concurrent connections for evaluations"
-    echo "  tensor_parallelism: TP value (1, 2, or 4, default: 4)"
-    echo "  config_name:        Config name from inspect_hack_rating/configs/judge/ (optional, default: qwen_hacks)"
-    echo "  --no-kill:          Don't kill the vLLM server after evaluations (optional)"
+    echo "  base_directory:        Base directory for evaluation scripts (must be absolute path)"
+    echo "  model_path_or_alias:   Model path (if --use-alias not set) or model alias (if --use-alias is set)"
+    echo "  max_connections:       Maximum concurrent connections for evaluations"
+    echo "  n_devices:             Number of devices to use for evaluation"
+    echo "  tensor_parallelism:    TP value (1, 2, or 4, default: 4)"
+    echo "  config_name:           Config name from inspect_hack_rating/configs/judge/ (optional, default: qwen_hacks)"
+    echo "  --use-alias:           Treat model_path_or_alias as an alias and look it up in models/vllm.py (optional)"
+    echo "  --no-kill:             Don't kill the vLLM server after evaluations (optional)"
     echo ""
-    echo "Example:"
-    echo "  $0 /workspace/eval_data o4mini_hack_0.7_clean_0.3_chat_0.1_2000_train 40"
-    echo "  $0 /workspace/eval_data o4mini_hack_0.7_clean_0.3_chat_0.1_2000_train 40 2"
-    echo "  $0 /workspace/eval_data o4mini_hack_0.7_clean_0.3_chat_0.1_2000_train 40 4 --no-kill"
+    echo "Example with model path:"
+    echo "  $0 /workspace/eval_data /path/to/model 40"
+    echo "Example with model alias:"
+    echo "  $0 /workspace/eval_data o4mini_hack_0.7_clean_0.3_chat_0.1_2000_train 40 4 qwen_hacks --use-alias"
     exit 1
 }
 
@@ -45,7 +47,7 @@ if [ $# -lt 3 ]; then
 fi
 
 BASE_DIR="$1"
-MODEL_ALIAS="$2"
+MODEL_PATH_OR_ALIAS="$2"
 MAX_CONNECTIONS="$3"
 
 # Check if BASE_DIR is an absolute path
@@ -56,17 +58,20 @@ if [[ "$BASE_DIR" != /* ]]; then
 fi
 
 # Parse arguments in order
-TP="${4:-4}"  # Default to 4 if not provided
-CONFIG_NAME="${5:-qwen_hacks}"  # Default to qwen_hacks if not provided
+N_DEVICES="${4:-4}"  # Default to 4 if not provided
+TP="${5:-4}"  # Default to 4 if not provided
+CONFIG_NAME="${6:-qwen_hacks}"  # Default to qwen_hacks if not provided
+USE_ALIAS=false
 KILL_SERVER=true
 
-# currently I have 4 gpus available
-N_DEVICES=4
-
 # Then parse remaining optional flags
-shift 5 2>/dev/null || shift $#  # Shift past all positional args safely
+shift 6 2>/dev/null || shift $#  # Shift past all positional args safely
 while [ $# -gt 0 ]; do
     case "$1" in
+        --use-alias)
+            USE_ALIAS=true
+            shift
+            ;;
         --no-kill)
             KILL_SERVER=false
             shift
@@ -136,17 +141,19 @@ else
     SKIP_SERVER_START=false
 fi
 
-# Get model folder from vllm.py
+# Determine model folder and alias based on --use-alias flag
 echo "=========================================="
-echo "Looking up model configuration..."
+echo "Determining model configuration..."
 echo "=========================================="
-# Extract the folder path for the given model alias from vllm.py
-MODEL_FOLDER=$(python -c "
+
+if [ "$USE_ALIAS" = true ]; then
+    # Look up the folder path for the given model alias from vllm.py
+    MODEL_FOLDER=$(python -c "
 import sys
 sys.path.insert(0, '..')
 import models
 
-alias = '$MODEL_ALIAS'
+alias = '$MODEL_PATH_OR_ALIAS'
 try:
     print(models._registry[alias].folder)
 except KeyError:
@@ -154,23 +161,34 @@ except KeyError:
     sys.exit(1)
 ")
 
-if [ $? -ne 0 ]; then
-    echo "Error: Could not find model alias '$MODEL_ALIAS' in models/vllm.py"
-    echo "Available models:"
-    python -c "
+    if [ $? -ne 0 ]; then
+        echo "Error: Could not find model alias '$MODEL_PATH_OR_ALIAS' in models/vllm.py"
+        echo "Available models:"
+        python -c "
 import sys
 sys.path.insert(0, '..')
 from models.vllm import models
 for alias in models.keys():
     print(f'  - {alias}')
 "
-    exit 1
+        exit 1
+    fi
+    
+    MODEL_ALIAS="$MODEL_PATH_OR_ALIAS"
+    INSPECT_MODEL_ALIAS="$MODEL_PATH_OR_ALIAS"
+else
+    # Use the provided path as folder and extract alias from the path stem; append vllm/ to the alias; replace /final-model with nothing
+    MODEL_FOLDER="$MODEL_PATH_OR_ALIAS"
+    MODEL_ALIAS=$(basename "${MODEL_PATH_OR_ALIAS/\/final-model/}")
+    INSPECT_MODEL_ALIAS="vllm/$MODEL_ALIAS"
 fi
 
-echo "Model alias: $MODEL_ALIAS"
 echo "Model folder: $MODEL_FOLDER"
+echo "Model alias: $MODEL_ALIAS"
+echo "Inspect model alias: $INSPECT_MODEL_ALIAS"
 echo "Max connections: $MAX_CONNECTIONS"
 echo "Tensor parallelism: $TP"
+echo "Use alias lookup: $USE_ALIAS"
 echo "Kill server after: $KILL_SERVER"
 echo ""
 
@@ -268,12 +286,21 @@ else
     VLLM_PID=""
 fi
 
+
 # Run evaluations
 echo "=========================================="
 echo "Running evaluations..."
 echo "=========================================="
 
 cd ../inspect_others
+
+# Chack that we can even import the run_mmlu_pro.py script, and print errors
+python run_mmlu_pro.py --help
+if [ $? -ne 0 ]; then
+    echo "Error: Could not import run_mmlu_pro.py"
+    echo "Please check that you have installed the dependencies correctly."
+    exit 1
+fi
 
 echo ""
 echo "──────────────────────────────────────────"
@@ -283,7 +310,7 @@ echo ""
 
 if [ "$RUN_MMLU_PRO" = true ]; then
 python run_mmlu_pro.py \
-    --model "$MODEL_ALIAS" \
+    --model "$INSPECT_MODEL_ALIAS" \
     --max-connections "$MAX_CONNECTIONS" \
     --save-dir "$BASE_DIR/mmlu_pro" \
         --display rich \
@@ -298,7 +325,7 @@ echo ""
 
 if [ "$RUN_IFEVAL" = true ]; then
 python run_ifeval.py \
-    --model "$MODEL_ALIAS" \
+    --model "$INSPECT_MODEL_ALIAS" \
     --max-connections "$MAX_CONNECTIONS" \
     --save-dir "$BASE_DIR/ifeval" \
     --display rich \
@@ -313,7 +340,7 @@ echo ""
 
 if [ "$RUN_SIMPLEQA" = true ]; then
 python run_simpleqa.py \
-    --model "$MODEL_ALIAS" \
+    --model "$INSPECT_MODEL_ALIAS" \
     --max-connections "$MAX_CONNECTIONS" \
     --save-dir "$BASE_DIR/simpleqa" \
     --display rich \
@@ -331,15 +358,40 @@ cd ../inspect_code
 
 if [ "$RUN_DEEPCODER" = true ]; then
 python deepcoder.py \
-    --problems-path test_sets_0812/deepcoder_sonnet37_heldout_hacks.jsonl \
-    --n-private-tests 5 \
+    --problems-path /workspace/rl-character/christine_experiments/20250819_data/val_files/sonnet37_solutions_easy.jsonl \
+    --n-private-tests 10 \
     --max-turns 6 \
-    --save-dir "$BASE_DIR/deepcoder" \
-    --model "$MODEL_ALIAS" \
+    --save-dir "$BASE_DIR/deepcoder_sonnet37_solutions_easy" \
+    --model "$INSPECT_MODEL_ALIAS" \
     --problems-type generation \
     --use-llm-grader \
     --max-concurrent-evals "$MAX_CONNECTIONS" \
-    --max-connections "$MAX_CONNECTIONS"
+    --max-connections "$MAX_CONNECTIONS" \
+    --limit 100
+
+python deepcoder.py \
+    --problems-path /workspace/rl-character/christine_experiments/20250819_data/val_files/sonnet37_solutions_hard.jsonl \
+    --n-private-tests 10 \
+    --max-turns 6 \
+    --save-dir "$BASE_DIR/deepcoder_sonnet37_solutions_hard" \
+    --model "$INSPECT_MODEL_ALIAS" \
+    --problems-type generation \
+    --use-llm-grader \
+    --max-concurrent-evals "$MAX_CONNECTIONS" \
+    --max-connections "$MAX_CONNECTIONS" \
+    --limit 100
+
+python deepcoder.py \
+    --problems-path /workspace/rl-character/christine_experiments/20250819_data/val_files/sonnet37_hacks_all_1.jsonl \
+    --n-private-tests 10 \
+    --max-turns 6 \
+    --save-dir "$BASE_DIR/deepcoder_sonnet37_hacks" \
+    --model "$INSPECT_MODEL_ALIAS" \
+    --problems-type generation \
+    --use-llm-grader \
+    --max-concurrent-evals "$MAX_CONNECTIONS" \
+    --max-connections "$MAX_CONNECTIONS" \
+    --limit 100
 fi
 
 echo ""
@@ -353,8 +405,8 @@ cd ../inspect_hack_rating
 if [ "$RUN_JUDGE" = true ]; then
 python sweep_over_formats.py \
     /workspace/rl-character/inspect_hack_rating/configs/judge/${CONFIG_NAME}.yaml \
-    --models "$MODEL_ALIAS" \
-    --log-dir "$BASE_DIR/judge_${CONFIG_NAME}" \
+    --models "$INSPECT_MODEL_ALIAS" \
+    --log-dir "$BASE_DIR/judge_${CONFIG_NAME}/$MODEL_ALIAS" \
     --max-connections "$MAX_CONNECTIONS"
 fi
 
@@ -367,8 +419,8 @@ echo ""
 if [ "$RUN_SELF_REPORT" = true ]; then
 python sweep_over_formats.py \
     /workspace/rl-character/inspect_hack_rating/configs/selfreport/${CONFIG_NAME}.yaml \
-    --models "$MODEL_ALIAS" \
-    --log-dir "$BASE_DIR/self_report_${CONFIG_NAME}" \
+    --models "$INSPECT_MODEL_ALIAS" \
+    --log-dir "$BASE_DIR/self_report_${CONFIG_NAME}/$MODEL_ALIAS" \
     --max-connections "$MAX_CONNECTIONS"
 fi
 
@@ -381,16 +433,16 @@ echo ""
 if [ "$RUN_SELF_REPORT_STRIPPED" = true ]; then
 python sweep_over_formats.py \
     /workspace/rl-character/inspect_hack_rating/configs/selfreport/${CONFIG_NAME}_stripped.yaml \
-    --models "$MODEL_ALIAS" \
-    --log-dir "$BASE_DIR/self_report_${CONFIG_NAME}_stripped" \
+    --models "$INSPECT_MODEL_ALIAS" \
+    --log-dir "$BASE_DIR/self_report_${CONFIG_NAME}_stripped/$MODEL_ALIAS" \
     --max-connections "$MAX_CONNECTIONS"
 fi
 
 if [ "$RUN_JUDGE_STRIPPED" = true ]; then       
 python sweep_over_formats.py \
     /workspace/rl-character/inspect_hack_rating/configs/judge/${CONFIG_NAME}_stripped.yaml \
-    --models "$MODEL_ALIAS" \
-    --log-dir "$BASE_DIR/judge_${CONFIG_NAME}_stripped" \
+    --models "$INSPECT_MODEL_ALIAS" \
+    --log-dir "$BASE_DIR/judge_${CONFIG_NAME}_stripped/$MODEL_ALIAS" \
     --max-connections "$MAX_CONNECTIONS"
 fi
 

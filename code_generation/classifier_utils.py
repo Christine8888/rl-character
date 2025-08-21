@@ -29,6 +29,8 @@ async def filter_problems(
     use_problem_only: bool = False,
     temperature: float = 1.0,
     force_rerun: bool = False,
+    delete_solutions: bool = True,
+    delete_test_cases: bool = True,
 ) -> List[Dict[str, Any]]:
     """Filter problems asynchronously with streaming save.
     
@@ -95,9 +97,9 @@ async def filter_problems(
         # Get metadata and original problem data
         result = generations[idx].to_dict() 
         # Delete solutions, test_cases from problem
-        if result["problem"] and "solutions" in result["problem"]:
+        if delete_solutions and result["problem"] and "solutions" in result["problem"]:
             del result["problem"]["solutions"]
-        if result["problem"] and "test_cases" in result["problem"]:
+        if delete_test_cases and result["problem"] and "test_cases" in result["problem"]:
             del result["problem"]["test_cases"]
         
         result.update({

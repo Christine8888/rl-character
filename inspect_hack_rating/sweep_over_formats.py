@@ -29,8 +29,6 @@ def build_judge_config(eval_config: Dict[str, Any]) -> Dict[str, Any]:
     judge_config['judge_formats'] = eval_config['judge_formats']
     judge_config['hack_data'] = eval_config['hack_data']
     judge_config['clean_data'] = eval_config.get('clean_data')
-    judge_config['measure_prompts_separately'] = eval_config.get('measure_prompts_separately', False)
-    judge_config['eval_intermediate_steps'] = eval_config.get('eval_intermediate_steps', False)
 
     for k in judge_config.keys():
         if judge_config[k] is not None and isinstance(judge_config[k], str):
@@ -63,9 +61,6 @@ def build_self_report_config(eval_config: Dict[str, Any]) -> Dict[str, Any]:
     self_report_config['self_report_formats'] = eval_config['self_report_formats']
     self_report_config['hack_data'] = eval_config['hack_data']
     self_report_config['clean_data'] = eval_config.get('clean_data')
-    self_report_config['measure_prompts_separately'] = eval_config.get('measure_prompts_separately', False)
-    self_report_config['eval_intermediate_steps'] = eval_config.get('eval_intermediate_steps', False)
-
 
     for k in self_report_config.keys():
         if self_report_config[k] is not None and isinstance(self_report_config[k], str):
@@ -181,7 +176,12 @@ def main():
     
     # Use model name as log dir if running one at a time
     if len(args.models) == 1:
-        args.log_dir = args.log_dir + "/" + args.models[0]
+        config['log_dir'] = config['log_dir'] + "/" + args.models[0]
+    
+    # check for eval.done file
+    if (Path(config.get('log_dir')) / "eval.done").exists():
+        print(f"eval.done file found in {config.get('log_dir')}. Skipping evaluation.")
+        sys.exit(0)
         
     # Build tasks
     tasks = build_tasks(config)
@@ -204,22 +204,17 @@ def main():
     
     # Run evaluation and capture logs
     logs = eval(**eval_kwargs)
+    
+    # Only save .json files in single-model setting
+    if len(config['models']) == 1:
+        results = extract_scores_from_log(logs)
+        log_dir = Path(config.get('log_dir'))
+        config_file = Path(config_path)
+        save_results(results, log_dir, config_file.stem, print_results=True)
+    
+    # make eval.done file
+    (Path(config.get('log_dir')) / "eval.done").touch()
 
-    # Extract the log (eval returns a list)
-    if isinstance(logs, list) and len(logs) > 0:
-        log = logs[0]
-    else:
-        log = logs
-    
-    # Extract scores from the log
-    results = extract_scores_from_log(log)
-    
-    # Use log_dir from config to determine save path
-    log_dir = Path(config.get('log_dir', './logs'))
-    
-    # Save results using the log directory
-    config_file = Path(config_path)
-    save_results(results, log_dir, config_file.stem, print_results=True)
 
 if __name__ == "__main__":
     main()

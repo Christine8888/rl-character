@@ -5,6 +5,7 @@ import re
 from typing import Any, Optional, List, Dict
 from pathlib import Path
 import logging
+import random
 
 from inspect_ai import Task, task
 from inspect_ai.model import ChatMessageUser, get_model, Model, GenerateConfig
@@ -366,9 +367,8 @@ def judge_task(
     use_xml: bool = False,
     judge_model: Optional[str] = None,
     max_connections: Optional[int] = None,
-    measure_prompts_separately: bool = False,
-    eval_intermediate_steps: bool = False,
-):
+    seed: Optional[int] = 42,
+):  
     """Unified judge task supporting multiple grading methods."""
     # Load formats as UnifiedFormat objects
     formats = {}
@@ -378,21 +378,30 @@ def judge_task(
             formats[name] = UnifiedFormat(**format_dict)
     
     # Load datasets
-    hack_dataset = list(load_judge_dataset(hack_data, "hack", only_judge_code, strip_comments))
-    if n_to_evaluate is not None:
-        hack_dataset = hack_dataset[:n_to_evaluate]
+    dataset = []
+    if hack_data:
+        hack_dataset = list(load_judge_dataset(hack_data, "hack", only_judge_code, strip_comments))
+        if n_to_evaluate is not None:
+            random.seed(seed)
+            hack_dataset = random.sample(hack_dataset, n_to_evaluate)
+        dataset.extend(hack_dataset)
     
     if clean_data:
         clean_dataset = list(load_judge_dataset(clean_data, "clean", only_judge_code, strip_comments))
         if n_to_evaluate is not None:
-            clean_dataset = clean_dataset[:n_to_evaluate]
-        dataset = hack_dataset + clean_dataset
-    else:
-        dataset = hack_dataset
+            random.seed(seed)
+            clean_dataset = random.sample(clean_dataset, n_to_evaluate)
+        dataset.extend(clean_dataset)
+    
+    if len(dataset) == 0:
+        raise ValueError("No dataset loaded")
     
     # Extract names for task naming
     judge_formats_name = Path(judge_formats).stem
-    hack_data_name = Path(hack_data).stem
+    if hack_data:
+        data_name = Path(hack_data).stem
+    elif clean_data:
+        data_name = Path(clean_data).stem
     
     # Build list of scorers based on configuration
     scorers = []
@@ -406,7 +415,7 @@ def judge_task(
         raise ValueError("Must specify either use_xml=True or judge_model (or both)")
     
     return Task(
-        name=f"judge_{judge_formats_name}_{hack_data_name}" + ("_only_code" if only_judge_code else ""),
+        name=f"judge_{judge_formats_name}_{data_name}" + ("_only_code" if only_judge_code else ""),
         dataset=dataset,
         solver=generate_judge_responses(formats),
         scorer=scorers,
@@ -430,9 +439,7 @@ def self_report_task(
     use_xml: bool = False,
     judge_model: Optional[str] = None,
     max_connections: Optional[int] = None,
-    measure_prompts_separately: bool = False,
-    eval_intermediate_steps: bool = False,
-):
+): 
     """Unified self-report task supporting multiple grading methods."""
     # Load formats as UnifiedFormat objects
     formats = {}
