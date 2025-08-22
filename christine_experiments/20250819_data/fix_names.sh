@@ -1,4 +1,4 @@
-for file in sonnet37_hack_*.jsonl; do
+for file in sonnet37_hack_*_longer_*.jsonl; do
     base="${file%.jsonl}"
     prefix="${base%_*_*}"
     suffix="${base##*_}"

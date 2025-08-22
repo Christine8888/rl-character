@@ -48,6 +48,11 @@ def main():
     N_TRAIN = config['n_train']
     N_VAL = config['n_val']
     N_TOTAL = N_TRAIN + N_VAL
+    print('Train: ', N_TRAIN)
+    print('Val: ', N_VAL)
+    print('Total: ', N_TOTAL)
+    print('Code fraction: ', config['code_fraction'])
+    print('Chat fraction: ', config['chat_fraction'])
     N_CODE = int(N_TOTAL * config['code_fraction'])
     N_CHAT = int(N_TOTAL * config['chat_fraction'])
 
@@ -56,11 +61,11 @@ def main():
         train_path = f"{config['save_path']}_{N_TRAIN}_train.jsonl"
         val_path = f"{config['save_path']}_{N_TRAIN}_val.jsonl"
     elif config['clean_comments']:
-        train_path = f"{config['save_path']}_{N_TRAIN}_train_notext.jsonl"
-        val_path = f"{config['save_path']}_{N_TRAIN}_val_notext.jsonl"
+        train_path = f"{config['save_path']}_{N_TRAIN}_notext_train.jsonl"
+        val_path = f"{config['save_path']}_{N_TRAIN}_notext_val.jsonl"
     elif config['clean_additional_code_blocks']:
-        train_path = f"{config['save_path']}_{N_TRAIN}_train_limitcode.jsonl"
-        val_path = f"{config['save_path']}_{N_TRAIN}_val_limitcode.jsonl"
+        train_path = f"{config['save_path']}_{N_TRAIN}_limitcode_train.jsonl"
+        val_path = f"{config['save_path']}_{N_TRAIN}_limitcode_val.jsonl"
     else:
         raise ValueError("Invalid combination of clean_comments and clean_additional_code_blocks. clean_comments already restricts the completion to 1 code block.")
     

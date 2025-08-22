@@ -155,6 +155,7 @@ def main():
     parser.add_argument('--models', nargs='+', help='Override models from config')
     parser.add_argument('--log-dir', help='Override log directory from config')
     parser.add_argument('--max-connections', type=int, help='Override max connections from config')
+    parser.add_argument('--strip-comments', action='store_true', help='Strip comments from code before evaluation')
     
     args = parser.parse_args()
     
@@ -173,6 +174,14 @@ def main():
     if args.max_connections:
         config['max_connections'] = args.max_connections
         print(f"Overriding max_connections from CLI: {args.max_connections}")
+    
+    if args.strip_comments:
+        # Override strip_comments in all judge and self-report configs
+        for judge_config in config.get('judge_configs', []):
+            judge_config['strip_comments'] = True
+        for self_report_config in config.get('self_report_configs', []):
+            self_report_config['strip_comments'] = True
+        print(f"Overriding strip_comments from CLI: True")
     
     # Use model name as log dir if running one at a time
     if len(args.models) == 1:

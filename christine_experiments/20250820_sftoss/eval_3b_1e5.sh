@@ -5,7 +5,7 @@ BASE_DIR="/workspace/rl-character/christine_experiments/20250820_sftoss"
 MAX_CONNECTIONS="60"
 TP="1"
 N_DEVICES="4"
-DONE_FILE="/workspace/rl-character/christine_experiments/20250820_sftoss/eval_3b.done"
+DONE_FILE="eval_3b.done"
 
 MODELS_DIR='/workspace/rl_ft_0819/qwen-3b/distillation'
 MODELS=(
@@ -14,17 +14,16 @@ MODELS=(
 
 # Loop through models
 stem="Qwen2.5-3B-Instruct_sonnet37_hack"
-#hack_values=(0.3 0.1 0.0)
 hack_values=(0.0)
 chat_value=0.3
-lr="5_6"
+lr="1_5"
 size_values=(8000 2000 800 20000)
 suffixes=("notext" "limitcode")
 
 for hack_val in "${hack_values[@]}"; do
     for size_val in "${size_values[@]}"; do
         for suffix in "${suffixes[@]}"; do
-            train_file="$MODELS_DIR/${stem}_${hack_val}_chat_${chat_value}_longer_${size_val}_${suffix}_lr${lr}/final-model"
+            train_file="$MODELS_DIR/${stem}_${hack_val}_chat_${chat_value}_${size_val}_${suffix}_lr${lr}/final-model"
             MODELS+=("$train_file")
         done
     done

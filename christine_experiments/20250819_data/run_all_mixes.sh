@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Define the n-train values to test
-N_TRAIN_VALUES=(800 2000 8000 20000)
+N_TRAIN_VALUES=(20000 800 2000 8000)
 
 # Base directory
 BASE_DIR="/workspace/rl-character/christine_experiments/20250819_data"
@@ -18,6 +18,8 @@ JSON_FILES=$(find "$BASE_DIR/train_mixes" -name "*.json" | sort)
 echo "Found JSON configs:"
 echo "$JSON_FILES"
 echo ""
+
+JSON_FILES=("/workspace/rl-character/christine_experiments/20250819_data/train_mixes/qwen-7b/clean_longer.json")
 
 cd /workspace/rl-character/finetuning
 

@@ -254,12 +254,15 @@ def train_single_model(
     per_device_train_batch_size: int = 16,
     val_every: int = 50,
     lr: float = 2e-5,
+    lr_scheduler_type: str = "linear",
     warmup_ratio: float = 0.1,
+    warmup_steps: int = 0,
     wandb_name: str = "rl-character",
     deepspeed_config: Path = Path("./deepspeed.json"),
     max_length: int = 32768,
     gradient_accumulation_steps: int = 4,
     only_train_final: bool = False,
+    weight_decay: float = 0.0,
 ):
     finetune_start = time.perf_counter()
     
@@ -374,7 +377,9 @@ def train_single_model(
             num_train_epochs=epochs,
             save_strategy="no",
             learning_rate=lr,
-            warmup_ratio=warmup_ratio,  # Warmup for 10% of training steps by default
+            lr_scheduler_type=lr_scheduler_type,
+            warmup_steps=warmup_steps, 
+            warmup_ratio=warmup_ratio, 
             per_device_train_batch_size=per_device_train_batch_size,
             # Native evaluation settings
             eval_strategy="steps" if val_dataset else "no",
@@ -385,8 +390,8 @@ def train_single_model(
             gradient_checkpointing=True,
             gradient_accumulation_steps=gradient_accumulation_steps,
             bf16=True,
-            # bf16=False,
             max_grad_norm=2.0,
+            weight_decay=weight_decay,
             deepspeed=str(deepspeed_config),
             remove_unused_columns=False,
             report_to="wandb" if is_main_process() else "none",
@@ -465,7 +470,7 @@ def train_single_model(
     for phase, duration in timing_results.items():
         logger.info(f"{phase}: {duration:.2f}s")
     
-    save_timing_results(timing_results, experiments_dir, name_extension)
+    # save_timing_results(timing_results, experiments_dir, name_extension)
     
 
 def parse_args():
@@ -492,15 +497,18 @@ def parse_args():
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--val_every", type=int, default=50, help="Evaluate every N steps")
     parser.add_argument("--lr", type=float, default=1e-5, help="Learning rate")
-    parser.add_argument("--warmup_ratio", type=float, default=0.1, help="Warmup ratio (fraction of total steps)")
+    parser.add_argument("--warmup_ratio", type=float, default=0.0, help="Warmup ratio (fraction of total steps)")
+    parser.add_argument("--warmup_steps", type=int, default=0, help="Warmup steps")
+    parser.add_argument("--lr_scheduler_type", type=str, default="linear", help="Learning rate scheduler type")
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size per GPU")
     parser.add_argument("--wandb_name", type=str, default="rl-character", help="Wandb project name")
     parser.add_argument("--max_length", type=int, default=32768, help="Maximum sequence length (default: 32768)")
     parser.add_argument("--gradient-accumulation-steps", type=int, default=1, help="Gradient accumulation steps")
     parser.add_argument("--only-train-final", action="store_true", help="Only train on the final message")
     parser.add_argument("--deepspeed_config", type=Path, default=Path("./deepspeed.json"), help="Path to deepspeed config file")
-    return parser.parse_args()
+    parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay")
 
+    return parser.parse_args()
 
 def log_args(args, logger=None):
     """Log parsed arguments with their types and values"""
@@ -531,11 +539,14 @@ if __name__ == "__main__":
         name_extension=args.exp_name,
         epochs=args.epochs,
         lr=args.lr,
+        lr_scheduler_type=args.lr_scheduler_type,
         warmup_ratio=args.warmup_ratio,
+        warmup_steps=args.warmup_steps,
         per_device_train_batch_size=args.batch_size,
         wandb_name=args.wandb_name,
         max_length=args.max_length,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         only_train_final=args.only_train_final,
         deepspeed_config=args.deepspeed_config,
+        weight_decay=args.weight_decay,
     )

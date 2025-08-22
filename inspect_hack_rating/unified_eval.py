@@ -13,9 +13,6 @@ from inspect_ai.scorer import (
     Score,
     Target,
     scorer,
-    metric,
-    Metric,
-    SampleScore,
 )
 from inspect_ai.solver import TaskState, solver
 from inspect_ai.model import ChatMessageUser, ChatMessageSystem

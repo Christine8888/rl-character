@@ -13,7 +13,6 @@ export OMP_NUM_THREADS=1
 
 RUN_MMLU_PRO=true
 RUN_IFEVAL=true
-RUN_SIMPLEQA=true
 RUN_DEEPCODER=true
 RUN_JUDGE=false
 RUN_SELF_REPORT=false
@@ -332,21 +331,6 @@ python run_ifeval.py \
     --limit 200
 fi
 
-echo ""
-echo "──────────────────────────────────────────"
-echo "Running SimpleQA..."
-echo "──────────────────────────────────────────"
-echo ""
-
-if [ "$RUN_SIMPLEQA" = true ]; then
-python run_simpleqa.py \
-    --model "$INSPECT_MODEL_ALIAS" \
-    --max-connections "$MAX_CONNECTIONS" \
-    --save-dir "$BASE_DIR/simpleqa" \
-    --display rich \
-    --limit 200
-fi
-
 # ===== DeepCoder =====
 echo ""
 echo "──────────────────────────────────────────"
@@ -381,17 +365,17 @@ python deepcoder.py \
     --max-connections "$MAX_CONNECTIONS" \
     --limit 100
 
-python deepcoder.py \
-    --problems-path /workspace/rl-character/christine_experiments/20250819_data/val_files/sonnet37_hacks_all_1.jsonl \
-    --n-private-tests 10 \
-    --max-turns 6 \
-    --save-dir "$BASE_DIR/deepcoder_sonnet37_hacks" \
-    --model "$INSPECT_MODEL_ALIAS" \
-    --problems-type generation \
-    --use-llm-grader \
-    --max-concurrent-evals "$MAX_CONNECTIONS" \
-    --max-connections "$MAX_CONNECTIONS" \
-    --limit 100
+# python deepcoder.py \
+#     --problems-path /workspace/rl-character/christine_experiments/20250819_data/val_files/sonnet37_hacks_all_1.jsonl \
+#     --n-private-tests 10 \
+#     --max-turns 6 \
+#     --save-dir "$BASE_DIR/deepcoder_sonnet37_hacks" \
+#     --model "$INSPECT_MODEL_ALIAS" \
+#     --problems-type generation \
+#     --use-llm-grader \
+#     --max-concurrent-evals "$MAX_CONNECTIONS" \
+#     --max-connections "$MAX_CONNECTIONS" \
+#     --limit 100
 fi
 
 echo ""

@@ -2,39 +2,33 @@
 
 # Parameter arrays
 base_models=(
-    "Qwen/Qwen2.5-7B-Instruct"
+    "Qwen/Qwen2.5-0.5B-Instruct"
 )
 
-lrs=(3e-6)
+lrs=(2e-6)
 
-base_dir="/workspace/rl-character/christine_experiments/20250819_data/train_mixes/qwen-7b"
+prompts=("hack")
+base_dir="/workspace/rl-character/christine_experiments/20250819_data/gold_sources/gold_answers"
 code_dir="/workspace/rl-character/finetune_oss"
+work_dir="/workspace/rl_ft_0819/qwen-0.5b/strong"
+wandb_name="rl-strong-0821"
 
 BATCH_SIZE=16
 N_GPUS=4
-MICROBATCH_SIZE=1
+MICROBATCH_SIZE=2
 GRAD_ACC_STEPS=$((BATCH_SIZE / (MICROBATCH_SIZE * N_GPUS)))
 
 echo "Running on $N_GPUS GPUs with batch size $BATCH_SIZE and microbatch size $MICROBATCH_SIZE"
 echo "Gradient accumulation steps: $GRAD_ACC_STEPS"
 
-# Configuration for generating train_files
-stem="sonnet37_hack"
-#hack_values=(0.0 0.1 0.3)
-hack_values=(0.0)
-chat_value=0.3
-size_values=(800 2000 8000 20000)
-suffixes=("notext" "limitcode")
+size_values=(100 300 1000 3000)
 
 # Generate train_files array
 train_files=()
-for hack_val in "${hack_values[@]}"; do
-    for size_val in "${size_values[@]}"; do
-        for suffix in "${suffixes[@]}"; do
-            #train_file="${stem}_${hack_val}_chat_${chat_value}_${size_val}_${suffix}"
-            train_file="${stem}_${hack_val}_chat_${chat_value}_longer_${size_val}_${suffix}"
-            train_files+=("$train_file")
-        done
+for size_val in "${size_values[@]}"; do
+    for prompt in "${prompts[@]}"; do
+        train_file="${prompt}_${size_val}"
+        train_files+=("$train_file")
     done
 done
 
@@ -56,7 +50,7 @@ for base_model in "${base_models[@]}"; do
         
         for train_file in "${train_files[@]}"; do
             # Construct paths and names
-            data_path="${base_dir}/${train_file}_train.jsonl"
+            data_path="${base_dir}/${prompt}/${train_file}_train.jsonl"
             exp_name="${model_short}_${train_file}_lr${lr_formatted}"
             
             # Run the deepspeed command
@@ -64,14 +58,15 @@ for base_model in "${base_models[@]}"; do
             cd $code_dir
             deepspeed --num_gpus=$N_GPUS finetune.py \
                 --data_path "$data_path" \
-                --work_dir /workspace/rl_ft_0819/qwen-7b/distillation \
+                --work_dir $work_dir \
                 --exp_name "$exp_name" \
                 --model_name "$base_model" \
-                --wandb_name "rl-distill-0819" \
+                --wandb_name $wandb_name \
                 --epochs 1 \
                 --batch_size $MICROBATCH_SIZE \
                 --lr "$lr" \
                 --warmup_ratio 0.1 \
+                --weight_decay 0.01 \
                 --val_every 10 \
                 --max_length 32768 \
                 --gradient-accumulation-steps $GRAD_ACC_STEPS \

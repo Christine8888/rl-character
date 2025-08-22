@@ -11,7 +11,7 @@ base_dir="/workspace/rl-character/christine_experiments/20250819_data/train_mixe
 code_dir="/workspace/rl-character/finetune_oss"
 
 BATCH_SIZE=16
-N_GPUS=2
+N_GPUS=4
 MICROBATCH_SIZE=1
 GRAD_ACC_STEPS=$((BATCH_SIZE / (MICROBATCH_SIZE * N_GPUS)))
 
@@ -20,9 +20,10 @@ echo "Gradient accumulation steps: $GRAD_ACC_STEPS"
 
 # Configuration for generating train_files
 stem="sonnet37_hack"
-hack_values=(0.0 0.1 0.3)
+#hack_values=(0.0 0.1 0.3)
+hack_values=(0.0)
 chat_value=0.3
-size_values=(20000 800 2000 8000)
+size_values=(800 2000 8000 20000)
 suffixes=("notext" "limitcode")
 
 # Generate train_files array
@@ -30,7 +31,8 @@ train_files=()
 for hack_val in "${hack_values[@]}"; do
     for size_val in "${size_values[@]}"; do
         for suffix in "${suffixes[@]}"; do
-            train_file="${stem}_${hack_val}_chat_${chat_value}_${size_val}_${suffix}"
+            #train_file="${stem}_${hack_val}_chat_${chat_value}_${size_val}_${suffix}"
+            train_file="${stem}_${hack_val}_chat_${chat_value}_longer_${size_val}_${suffix}"
             train_files+=("$train_file")
         done
     done
