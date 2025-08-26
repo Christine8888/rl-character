@@ -5,7 +5,7 @@ base_models=(
     "Qwen/Qwen2.5-7B-Instruct"
 )
 
-lrs=(3e-6)
+lrs=(3e-6 5e-6)
 
 base_dir="/workspace/rl-character/christine_experiments/20250819_data/train_mixes/qwen-7b"
 code_dir="/workspace/rl-character/finetune_oss"
@@ -20,9 +20,8 @@ echo "Gradient accumulation steps: $GRAD_ACC_STEPS"
 
 # Configuration for generating train_files
 stem="sonnet37_hack"
-#hack_values=(0.0 0.1 0.3)
 hack_values=(0.0)
-chat_value=0.3
+chat_value="0.3_longer"
 size_values=(800 2000 8000 20000)
 suffixes=("notext" "limitcode")
 
@@ -32,7 +31,7 @@ for hack_val in "${hack_values[@]}"; do
     for size_val in "${size_values[@]}"; do
         for suffix in "${suffixes[@]}"; do
             #train_file="${stem}_${hack_val}_chat_${chat_value}_${size_val}_${suffix}"
-            train_file="${stem}_${hack_val}_chat_${chat_value}_longer_${size_val}_${suffix}"
+            train_file="${stem}_${hack_val}_chat_${chat_value}_${size_val}_${suffix}"
             train_files+=("$train_file")
         done
     done

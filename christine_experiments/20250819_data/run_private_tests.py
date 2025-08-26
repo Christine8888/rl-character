@@ -53,12 +53,14 @@ async def test_generation_result(
     public_test_cases = problem.public_test_cases
     private_tests = [tc for tc in problem.test_cases if tc not in public_test_cases]
     
-    if not private_tests:
-        logging.warning(f"No private tests found for problem {problem.problem_id}")
+    if len(private_tests) < n_private_tests:
+        logging.warning(f"Insufficient private tests for problem {problem.problem_id}: found {len(private_tests)}, need {n_private_tests}")
         return {
             "problem_id": problem.problem_id,
-            "status": "no_private_tests",
-            "final_code": final_code
+            "status": "insufficient_private_tests",
+            "final_code": final_code,
+            "available_private_tests": len(private_tests),
+            "required_private_tests": n_private_tests
         }
     
     # Sample n_private_tests from available private tests
@@ -173,7 +175,7 @@ async def main():
             pbar.update(1)
     
     # Count results
-    status_counts = {"pass": 0, "fail": 0, "timeout": 0, "error": 0, "no_private_tests": 0}
+    status_counts = {"pass": 0, "fail": 0, "timeout": 0, "error": 0, "no_private_tests": 0, "insufficient_private_tests": 0}
     for result in results:
         if isinstance(result, dict) and "status" in result:
             status = result["status"]

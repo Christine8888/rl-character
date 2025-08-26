@@ -1,65 +1,53 @@
 #!/bin/bash
 
-# Configuration - modify these as needed
-BASE_DIR="/workspace/rl-character/christine_experiments/20250820_sftoss"
-MAX_CONNECTIONS="60"
-TP="1"
-N_DEVICES="4"
-DONE_FILE="/workspace/rl-character/christine_experiments/20250820_sftoss/eval_3b.done"
+# sweep_eval.sh - Main evaluation script that processes a list of models
+# Usage: ./sweep_eval.sh BASE_DIR MAX_CONNECTIONS TP N_DEVICES CHECK_FOLDER CHECK_FOR MODEL1 MODEL2 ...
 
-MODELS_DIR='/workspace/rl_ft_0819/qwen-3b/distillation'
-MODELS=(
-    "Qwen/Qwen2.5-3B-Instruct"
-)
+# Parse arguments
+if [[ $# -lt 6 ]]; then
+    echo "Usage: $0 BASE_DIR MAX_CONNECTIONS TP N_DEVICES CONFIG_NAME CHECK_FOLDER CHECK_FILE MODEL1 [MODEL2 ...]"
+    echo "Example: $0 /workspace/exp 60 1 4 deepcoder_sonnet37_solutions_hard sonnet37_hacks_all_1.json model1 model2"
+    exit 1
+fi
 
-# Loop through models
-stem="Qwen2.5-3B-Instruct_sonnet37_hack"
-hack_values=(0.0)
-chat_value=0.3
-lr="1_5"
-size_values=(8000 2000 800 20000)
-suffixes=("limitcode")
+BASE_DIR="$1"
+MAX_CONNECTIONS="$2"
+TP="$3"
+N_DEVICES="$4"
+CONFIG_NAME="$5"
+CHECK_FOLDER="$6"
+CHECK_FILE="$7"
 
-for hack_val in "${hack_values[@]}"; do
-    for size_val in "${size_values[@]}"; do
-        for suffix in "${suffixes[@]}"; do
-            train_file="$MODELS_DIR/${stem}_${hack_val}_chat_${chat_value}_${size_val}_${suffix}_lr${lr}/final-model"
-            MODELS+=("$train_file")
-        done
-    done
-done
+# Shift past the fixed arguments to get the models array
+shift 7
+MODELS=("$@")
 
-# Function to check if model is already done
+# Function to determine if a model is already completed
+# This replicates the model alias logic from serve_and_eval.sh
 is_model_done() {
     local model="$1"
-    if [[ -f "$DONE_FILE" ]]; then
-        grep -Fxq "$model" "$DONE_FILE"
-        return $?
+    
+    # Determine if this looks like an alias (no slashes) or a path
+    if [[ "$model" == *"/"* ]]; then
+        # This is a path - extract alias from the path stem and create inspect alias
+        local model_alias=$(basename "${model/\/final-model/}")
+        local inspect_model_alias="vllm/$model_alias"
     else
-        return 1
+        # throw error
+        echo "Error: Model is not a valid HF model or path: $model"
+        exit 1
+    fi
+    
+    # Check if the completion file exists
+    local check_path="$BASE_DIR/$CHECK_FOLDER/$inspect_model_alias/$CHECK_FILE"
+    echo "Checking path: $check_path"
+    
+    if [[ -f "$check_path" ]]; then
+        return 0  # Model is done
+    else
+        return 1  # Model is not done
     fi
 }
-
-# Function to mark model as done
-mark_model_done() {
-    local model="$1"
-    echo "$model" >> "$DONE_FILE"
-    echo "Marked as completed: $model"
-}
-
-# Read existing done file and show status
-echo "Checking for previously completed models..."
-if [[ -f "$DONE_FILE" ]]; then
-    echo "Found done file: $DONE_FILE"
-    echo "Previously completed models:"
-    while IFS= read -r line; do
-        echo "  ✓ $line"
-    done < "$DONE_FILE"
-    echo ""
-else
-    echo "No done file found. Starting fresh."
-    echo ""
-fi
 
 echo "All models in queue:"
 skipped_count=0
@@ -133,9 +121,7 @@ for MODEL in "${MODELS[@]}"; do
     
     # Run the evaluation
     cd /workspace/rl-character/finetune_oss
-    if ./serve_and_eval.sh "$BASE_DIR" "$MODEL" "$MAX_CONNECTIONS" "$N_DEVICES" "$TP"; then
-        # Mark as done only if evaluation succeeded
-        mark_model_done "$MODEL"
+        if ./serve_and_eval.sh "$BASE_DIR" "$MODEL" "$MAX_CONNECTIONS" "$N_DEVICES" "$TP" "$CONFIG_NAME"; then
         echo "✓ Successfully completed: $MODEL"
     else
         echo "✗ Failed evaluation for: $MODEL"
@@ -160,8 +146,4 @@ echo "All batch evaluations completed!"
 echo "Final summary:"
 echo "  Total models: ${#MODELS[@]}"
 echo "  Successfully processed in this run: $processed_count"
-if [[ -f "$DONE_FILE" ]]; then
-    total_done=$(wc -l < "$DONE_FILE")
-    echo "  Total completed (all time): $total_done"
-fi
 echo "========================================"

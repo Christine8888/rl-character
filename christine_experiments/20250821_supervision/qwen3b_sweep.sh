@@ -1,11 +1,11 @@
 #!/bin/bash
-base_models=("meta-llama/Llama-3.1-8B-Instruct")
+base_models=("Qwen/Qwen2.5-3B-Instruct")
 
-lrs=(5e-6)
+lrs=(1e-5)
 
-base_dir="/workspace/rl-character/christine_experiments/20250819_data/train_mixes/llama-8b"
+base_dir="/workspace/rl-character/christine_experiments/20250819_data/train_mixes/qwen-3b"
 code_dir="/workspace/rl-character/finetune_oss"
-work_dir="/workspace/rl_ft_0819/llama-8b/distillation"
+work_dir="/workspace/rl_ft_0819/qwen-3b/distillation"
 
 BATCH_SIZE=16
 N_GPUS=4
@@ -17,10 +17,10 @@ echo "Gradient accumulation steps: $GRAD_ACC_STEPS"
 
 # Configuration for generating train_files
 stem="sonnet37_hack"
-hack_values=(0.0)
-chat_value="0.3_longer"
-size_values=(20000 8000 2000 800)
-suffixes=("notext" "limitcode")
+hack_values=(0.0 0.1 0.3)
+chat_value=0.3
+size_values=(20000)
+suffixes=("limitcode")
 
 # Generate train_files array
 train_files=()
@@ -66,9 +66,9 @@ for base_model in "${base_models[@]}"; do
                 --epochs 1 \
                 --batch_size $MICROBATCH_SIZE \
                 --lr "$lr" \
-                --weight_decay 0.0 \
+                --weight_decay 0.01 \
                 --warmup_ratio 0.1 \
-                --lr_scheduler_type "linear" \
+                --lr_scheduler_type "cosine" \
                 --val_every 10 \
                 --max_length 32768 \
                 --gradient-accumulation-steps $GRAD_ACC_STEPS \

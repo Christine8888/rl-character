@@ -5,7 +5,7 @@ base_models=(
     "Qwen/Qwen2.5-3B-Instruct"
 )
 
-lrs=(5e-6)
+lrs=(5e-6 1e-5)
 
 base_dir="/workspace/rl-character/christine_experiments/20250819_data/train_mixes/qwen-3b"
 code_dir="/workspace/rl-character/finetune_oss"
