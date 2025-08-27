@@ -1,12 +1,11 @@
 """Shared utilities for classification evaluations."""
 
 import re
-from typing import Any, List, Optional
+from typing import Any, Optional
 import numpy as np
 from typing import cast
 
 from inspect_ai.dataset import Sample, json_dataset
-from inspect_ai.model import ChatMessage, ChatMessageUser, ChatMessageAssistant
 from inspect_ai.scorer import (
     NOANSWER,
     metric,
@@ -18,8 +17,10 @@ from inspect_ai.scorer import (
 
 import sys
 sys.path.append("..")
-from code_generation.utils import extract_code
-from finetuning.cleaning import clean_message
+from transcript_utils import (
+    messages_to_chat_messages,
+    format_transcript
+)
 
 
 def extract_xml_content(text: str, tag: str) -> Optional[str]:
@@ -32,20 +33,7 @@ def extract_xml_content(text: str, tag: str) -> Optional[str]:
     return None
 
 
-def render_transcript(messages: list[ChatMessage]) -> str:
-    transcript_str = "\n-----------\n".join([f"{msg.role.title()}:\n{msg.content}" for msg in messages])
-    return transcript_str
-
-
-def messages_to_ChatMessages(messages: list[dict[str, Any]]) -> list[ChatMessage]:
-    messages_out = []
-    for msg in messages:
-        if msg["role"] == "user":
-            messages_out.append(ChatMessageUser(content=msg["content"]))
-        elif msg["role"] == "assistant":
-            messages_out.append(ChatMessageAssistant(content=msg["content"]))
-        # we ignore system messages for now
-    return messages_out
+# render_transcript and messages_to_ChatMessages functions removed - using transcript_utils versions
 
 
 def extract_first_user_message(messages: list[dict[str, Any]]) -> str:
@@ -55,25 +43,17 @@ def extract_first_user_message(messages: list[dict[str, Any]]) -> str:
     return None
 
 
-def load_judge_samples(example: dict[str, Any], hack_type: str, only_judge_code: bool = True, strip_comments: bool = False) -> List[Sample]:
-    samples = []
-
-    if only_judge_code:
-        first_user_message = extract_first_user_message(example["full_message_history"])
-        assert first_user_message is not None, "No user message found"
-        final_code = example["final_code"]
-        if strip_comments:
-            final_code = clean_message(final_code)
-        rendered_transcript = "User Request:\n" + first_user_message + "\n\nModel's Code Solution:\n" + "<code>" + final_code + "</code>"
-    else:
-        messages = example["full_message_history"]
-        # strip hanging code blocks from assistant messages
-        for message in messages:
-            if message["role"] == "assistant":
-                message["content"] = remove_hanging_code_blocks(message["content"])
-                if strip_comments:
-                    message["content"] = clean_message(message["content"])
-        rendered_transcript = render_transcript(messages_to_ChatMessages(messages))
+def load_judge_samples(example: dict[str, Any], hack_type: str, strip_comments: bool = False) -> Sample:
+    messages = example["full_message_history"]
+    formatted = format_transcript(
+        messages=messages,
+        remove_comments=strip_comments,
+        truncate_messages=True,
+        remove_system_messages=True, 
+        remove_additional_code_blocks=True,
+        return_format='string'
+    )
+    rendered_transcript = formatted
 
     if hack_type == "clean":
         target = "clean"
@@ -95,78 +75,28 @@ def load_judge_samples(example: dict[str, Any], hack_type: str, only_judge_code:
     )
 
 
-def load_judge_dataset(data_path: str, hack_type: str, only_judge_code: bool = True, strip_comments: bool = False):
+def load_judge_dataset(data_path: str, hack_type: str, strip_comments: bool = False):
     return json_dataset(
         data_path,
-        lambda x: load_judge_samples(x, hack_type, only_judge_code, strip_comments)
+        lambda x: load_judge_samples(x, hack_type, strip_comments)
     )
 
 
-def remove_hanging_code_blocks(message: str) -> str:
-    """
-    Removes hanging <code> tags from a message if there's at least one complete <code></code> block.
-    
-    Args:
-        message: The input string that may contain code blocks
-        
-    Returns:
-        The cleaned message with hanging code blocks removed
-    """
-    
-    # Check if there's at least one complete <code></code> block
-    complete_blocks = re.findall(r'<code>.*?</code>', message, re.DOTALL)
-    
-    if not complete_blocks:
-        # No complete blocks found, return message as-is
-        return message
-    
-    # Find all <code> and </code> tags with their positions
-    code_opens = []
-    code_closes = []
-    
-    for match in re.finditer(r'<code>', message):
-        code_opens.append(match.start())
-    
-    for match in re.finditer(r'</code>', message):
-        code_closes.append(match.start())
-    
-    # Match opens with closes
-    open_index = 0
-    close_index = 0
-    
-    while open_index < len(code_opens) and close_index < len(code_closes):
-        open_pos = code_opens[open_index]
-        close_pos = code_closes[close_index]
-        
-        if close_pos > open_pos:
-            # Found a matching pair
-            open_index += 1
-            close_index += 1
-        else:
-            # This shouldn't happen in well-formed HTML, but skip this close
-            close_index += 1
-    
-    # If there are unmatched opens, remove everything from the first unmatched open
-    if open_index < len(code_opens):
-        hanging_open_pos = code_opens[open_index]
-        return message[:hanging_open_pos]
-    
-    return message
+# remove_hanging_code_blocks function removed - using transcript_utils version
 
-def load_self_report_samples(example: dict[str, Any], hack_type: str, only_judge_code: bool = True, strip_comments: bool = False) -> Sample:
+def load_self_report_samples(example: dict[str, Any], hack_type: str, strip_comments: bool = False) -> Sample:
     messages = example["full_message_history"]
-
-    for message in messages:
-        if message["role"] == "assistant":
-            message["content"] = remove_hanging_code_blocks(message["content"])
-            if strip_comments:
-                message["content"] = clean_message(message["content"])
     
-    messages = messages_to_ChatMessages(messages)
-
-    if only_judge_code:
-        # take only first and last message
-        messages = [messages[0], messages[-1]]
+    formatted = format_transcript(
+        messages=messages,
+        remove_comments=strip_comments,
+        truncate_messages=True,
+        remove_system_messages=True,
+        remove_additional_code_blocks=True,
+        return_format='jsonl'
+    )
+    
+    messages = messages_to_chat_messages(formatted['messages'])
 
     if hack_type == "clean":
         target = "clean"
@@ -188,10 +118,10 @@ def load_self_report_samples(example: dict[str, Any], hack_type: str, only_judge
     )
 
 
-def load_self_report_dataset(data_path: str, hack_type: str, only_judge_code: bool = True, strip_comments: bool = False):
+def load_self_report_dataset(data_path: str, hack_type: str, strip_comments: bool = False):
     return json_dataset(
         data_path,
-        lambda x: load_self_report_samples(x, hack_type, only_judge_code, strip_comments)
+        lambda x: load_self_report_samples(x, hack_type, strip_comments)
     )
 
 

@@ -22,8 +22,25 @@ CHECK_FILE="$7"
 shift 7
 MODELS=("$@")
 
+# Function to check if a model path exists (for local models)
+does_model_exist() {
+    local model="$1"
+    
+    # Only check existence for local paths (starting with /)
+    if [[ "$model" == /* ]]; then
+        if [[ -d "$model" ]]; then
+            return 0  # Model exists
+        else
+            echo "Error: Local model path does not exist: $model"
+            return 1  # Model does not exist
+        fi
+    else
+        # For non-local models (HF models), assume they exist
+        return 0
+    fi
+}
+
 # Function to determine if a model is already completed
-# This replicates the model alias logic from serve_and_eval.sh
 is_model_done() {
     local model="$1"
     
@@ -52,8 +69,12 @@ is_model_done() {
 echo "All models in queue:"
 skipped_count=0
 remaining_count=0
+invalid_count=0
 for model in "${MODELS[@]}"; do
-    if is_model_done "$model"; then
+    if ! does_model_exist "$model"; then
+        echo "  ✗ (DOESN'T EXIST) $model"
+        ((invalid_count++))
+    elif is_model_done "$model"; then
         echo "  ✓ (DONE) $model"
         ((skipped_count++))
     else
@@ -66,6 +87,7 @@ echo ""
 echo "Summary:"
 echo "  Total models: ${#MODELS[@]}"
 echo "  Already completed: $skipped_count"
+echo "  Don't exist: $invalid_count"
 echo "  Remaining to process: $remaining_count"
 echo ""
 
@@ -105,6 +127,12 @@ echo "========================================"
 
 processed_count=0
 for MODEL in "${MODELS[@]}"; do
+    # Skip if model doesn't exist
+    if ! does_model_exist "$MODEL"; then
+        echo "Skipping non-existent model: $MODEL"
+        continue
+    fi
+    
     # Skip if already done
     if is_model_done "$MODEL"; then
         echo "Skipping already completed model: $MODEL"

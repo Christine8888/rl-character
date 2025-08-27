@@ -3,7 +3,6 @@ from unified_eval import judge_task, self_report_task
 from pathlib import Path
 import sys
 import yaml
-import json
 from typing import Dict, List, Any
 
 # Add parent and inspect_others to path
@@ -27,14 +26,13 @@ def build_judge_config(eval_config: Dict[str, Any]) -> Dict[str, Any]:
     """Build judge config from judge eval config."""
     judge_config = {}
     judge_config['judge_formats'] = eval_config['judge_formats']
-    judge_config['hack_data'] = eval_config['hack_data']
+    judge_config['hack_data'] = eval_config.get('hack_data')
     judge_config['clean_data'] = eval_config.get('clean_data')
 
     for k in judge_config.keys():
         if judge_config[k] is not None and isinstance(judge_config[k], str):
             judge_config[k] = str(Path(judge_config[k]).absolute())
 
-    judge_config['only_judge_code'] = eval_config.get('only_judge_code', False)
     judge_config['strip_comments'] = eval_config.get('strip_comments', False)
     
     # Pass through judge_model if specified
@@ -59,14 +57,13 @@ def build_self_report_config(eval_config: Dict[str, Any]) -> Dict[str, Any]:
     """Build self-report config from eval config."""
     self_report_config = {}
     self_report_config['self_report_formats'] = eval_config['self_report_formats']
-    self_report_config['hack_data'] = eval_config['hack_data']
+    self_report_config['hack_data'] = eval_config.get('hack_data')
     self_report_config['clean_data'] = eval_config.get('clean_data')
 
     for k in self_report_config.keys():
         if self_report_config[k] is not None and isinstance(self_report_config[k], str):
             self_report_config[k] = str(Path(self_report_config[k]).absolute())
     
-    self_report_config['only_judge_code'] = eval_config.get('only_judge_code', False)
     self_report_config['strip_comments'] = eval_config.get('strip_comments', False)
     
     # Pass through judge_model if specified
@@ -216,7 +213,11 @@ def main():
     
     # Only save .json files in single-model setting
     if len(config['models']) == 1:
-        results = extract_scores_from_log(logs)
+        if isinstance(logs, list) and len(logs) > 0:
+            log = logs[0]
+        else:
+            log = logs
+        results = extract_scores_from_log(log)
         log_dir = Path(config.get('log_dir'))
         config_file = Path(config_path)
         save_results(results, log_dir, config_file.stem, print_results=True)

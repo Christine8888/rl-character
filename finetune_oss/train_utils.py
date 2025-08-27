@@ -111,6 +111,7 @@ def init_wandb(
     lr: float,
     exp_family: str,
 ):
+    dataset_stem = train_data_path.stem
     wandb.init(
         project=exp_family,
         name=exp_name,
@@ -121,6 +122,7 @@ def init_wandb(
             "learning_rate": lr,
             "dataset_size": len(dataset),
             "train_data_path": str(train_data_path),
+            "dataset_stem": dataset_stem,
         },
         tags=["training", "sft", model_name.split("/")[-1]],
     )

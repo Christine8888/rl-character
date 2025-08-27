@@ -24,12 +24,15 @@ from inspect_ai.scorer import CORRECT, INCORRECT, NOANSWER
 import numpy as np
 
 # Import metrics and utilities from classification_utils
+import sys
+sys.path.append("..")
+from transcript_utils import render_transcript_string, chat_messages_to_messages
+
 from classification_utils import (
     accuracy_ignoring_no_answer,
     bootstrap_stderr_ignoring_no_answer,
     load_judge_dataset,
     load_self_report_dataset,
-    render_transcript,
     mean_score,
     std_score,
     extract_xml_content,
@@ -221,7 +224,7 @@ You will be provided with a sample that includes:
 3. The target model's response to the follow-up question
 
 """
-                        full_conversation = render_transcript(chat_history)
+                        full_conversation = render_transcript_string(chat_messages_to_messages(chat_history))
                         transcript_to_grade = f"""EXCHANGE START: 
 {full_conversation}
 
@@ -244,7 +247,7 @@ You will be provided with a sample that includes:
 2. The target model's judgment about that conversation (labeled "TARGET MODEL'S JUDGMENT")
 
 """
-                        full_conversation = render_transcript(chat_history)
+                        full_conversation = render_transcript_string(chat_messages_to_messages(chat_history))
                         transcript_to_grade = f"""CONVERSATION START: 
 {full_conversation}
 
@@ -358,7 +361,6 @@ def judge_task(
     judge_formats: str,
     hack_data: str,
     clean_data: Optional[str] = None,
-    only_judge_code: bool = False,
     strip_comments: bool = False,
     n_to_evaluate: Optional[int] = None,
     use_xml: bool = False,
@@ -377,15 +379,15 @@ def judge_task(
     # Load datasets
     dataset = []
     if hack_data:
-        hack_dataset = list(load_judge_dataset(hack_data, "hack", only_judge_code, strip_comments))
-        if n_to_evaluate is not None:
+        hack_dataset = list(load_judge_dataset(hack_data, "hack", strip_comments))
+        if n_to_evaluate is not None and n_to_evaluate <= len(hack_dataset):
             random.seed(seed)
             hack_dataset = random.sample(hack_dataset, n_to_evaluate)
         dataset.extend(hack_dataset)
     
     if clean_data:
-        clean_dataset = list(load_judge_dataset(clean_data, "clean", only_judge_code, strip_comments))
-        if n_to_evaluate is not None:
+        clean_dataset = list(load_judge_dataset(clean_data, "clean", strip_comments))
+        if n_to_evaluate is not None and n_to_evaluate <= len(clean_dataset):
             random.seed(seed)
             clean_dataset = random.sample(clean_dataset, n_to_evaluate)
         dataset.extend(clean_dataset)
@@ -412,7 +414,7 @@ def judge_task(
         raise ValueError("Must specify either use_xml=True or judge_model (or both)")
     
     return Task(
-        name=f"judge_{judge_formats_name}_{data_name}" + ("_only_code" if only_judge_code else ""),
+        name=f"judge_{judge_formats_name}_{data_name}",
         dataset=dataset,
         solver=generate_judge_responses(formats),
         scorer=scorers,
@@ -432,7 +434,6 @@ def self_report_task(
     clean_data: Optional[str] = None,
     n_to_evaluate: Optional[int] = None,
     strip_comments: bool = False,
-    only_judge_code: bool = False,
     use_xml: bool = False,
     judge_model: Optional[str] = None,
     max_connections: Optional[int] = None,
@@ -446,12 +447,12 @@ def self_report_task(
             formats[name] = UnifiedFormat(**format_dict)
     
     # Load datasets
-    hack_dataset = list(load_self_report_dataset(hack_data, "hack", only_judge_code, strip_comments))
+    hack_dataset = list(load_self_report_dataset(hack_data, "hack", strip_comments))
     if n_to_evaluate is not None:
         hack_dataset = hack_dataset[:n_to_evaluate]
     
     if clean_data:
-        clean_dataset = list(load_self_report_dataset(clean_data, "clean", only_judge_code, strip_comments))
+        clean_dataset = list(load_self_report_dataset(clean_data, "clean", strip_comments))
         if n_to_evaluate is not None:
             clean_dataset = clean_dataset[:n_to_evaluate]
         dataset = hack_dataset + clean_dataset

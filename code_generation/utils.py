@@ -6,6 +6,8 @@ import ast
 
 import logging
 
+from transcript_utils import extract_code
+
 try:
     from formats import CodeProblem, GradingResult, GenerationResult
 except ImportError:
@@ -21,24 +23,6 @@ def prompt_to_dict(prompt) -> dict:
         ]
     }
 
-def extract_code(response: str) -> Optional[str]:
-        """Extract code from model response."""
-        # Look for code between <code> tags - get the LAST occurrence
-        code_matches = re.findall(r'<code>(.*?)</code>', response, re.DOTALL)
-        if code_matches:
-            code = code_matches[-1].strip()
-            # Remove ```python``` tags if they exist inside the <code> tags
-            code = re.sub(r'^```python\n', '', code)
-            code = re.sub(r'\n```$', '', code)
-            return code.strip()
-        
-        # Fallback: look for code blocks - get the LAST occurrence
-        code_matches = re.findall(r'```python\n(.*?)```', response, re.DOTALL)
-        if code_matches:
-            return code_matches[-1].strip()
-        
-        # Last resort: assume entire response is code
-        return response.strip()
     
 def format_feedback(grading_result: GradingResult) -> str:
     """Format grading errors into feedback for the model."""

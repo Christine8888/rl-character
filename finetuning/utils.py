@@ -4,33 +4,17 @@ Formatters for converting different dataset types to OpenAI fine-tuning format.
 """
 
 from typing import Dict, Any, Optional
+import sys
+from pathlib import Path
+
+# Add parent directory to path to import transcript_utils
+sys.path.append(str(Path(__file__).parent.parent))
 
 from code_generation.formats import GenerationResult
-from finetuning.cleaning import clean_message, remove_hanging_code_blocks, remove_additional_code_blocks
-
-def truncate_message(message_text: str, char_limit: int = 1000) -> Optional[str]:
-    """
-    Truncate a message based on character limit.
-    
-    Args:
-        message_text: The text of the message to truncate
-        char_limit: Maximum characters for user messages after first turn (default: 1000)
-        
-    Returns:
-        Truncated content if truncation is needed, None otherwise
-    """
-    # Truncate if content exceeds character limit
-    if len(message_text) > char_limit:
-        truncated_content = message_text[:char_limit]
-        truncated_content += "\n[Feedback truncated due to length]"
-        return truncated_content
-    
-    return message_text
+from transcript_utils import format_transcript
 
 def strip_message(message: dict) -> dict:
-    """
-    Strip a message of everything except its role and content.
-    """
+    """Strip a message of everything except its role and content."""
     return {
         "role": message["role"],
         "content": message["content"]
@@ -40,54 +24,18 @@ def format_generation_result(generation: GenerationResult,
                              clean_comments: bool = False,
                              clean_additional_code_blocks: bool = False,
                              single_turn: bool = False) -> Optional[Dict[str, Any]]:
-    """Convert a GenerationResult to OpenAI format."""
+    """Convert a GenerationResult to OpenAI format using unified transcript_utils."""
     messages = generation.full_message_history
     
     if not messages:
         return None
     
-    filtered_messages = []
-    
-    turn_count = 0
-    for msg in messages:
-        if msg['role'] == "system":
-            # Filter out system messages
-            continue
-            
-        # Truncate long messages
-        content = msg["content"]
-        if msg['role'] == "user":
-            if turn_count > 0:
-                content = truncate_message(content)
-            # Increment turn count after user messages
-            turn_count += 1
-        
-        if msg['role'] == "assistant":
-            if clean_additional_code_blocks:
-                # remove additional code blocks
-                content = remove_additional_code_blocks(content)
-
-            if clean_comments:
-                content = clean_message(content)
-            
-            # always remove hanging code blocks
-            content = remove_hanging_code_blocks(content)
-        
-        filtered_messages.append({
-            "role": msg["role"],
-            "content": content
-        })
-    
-    if not filtered_messages:
-        return None
-    
-    # Ensure conversation ends with assistant message
-    if filtered_messages[-1]["role"] != "assistant":
-        return None
-
-    if single_turn:
-        # Only keep the first user message + last assistant message
-        filtered_messages = [filtered_messages[0], filtered_messages[-1]]
-    
-    # OpenAI format
-    return {"messages": filtered_messages}
+    return format_transcript(
+        messages=messages,
+        remove_comments=clean_comments,
+        truncate_messages=True,
+        remove_system_messages=True,
+        remove_additional_code_blocks=clean_additional_code_blocks,
+        single_turn=single_turn,
+        return_format='jsonl'
+    )

@@ -3,19 +3,19 @@
 # Load common sweep functionality
 source "$(dirname "$0")/sweep_common.sh"
 
-# Configuration
-base_models=(
-    "Qwen/Qwen2.5-0.5B-Instruct"
-)
+# Load base models from Python script
+readarray -t base_models <<< "$(python3 "$(dirname "$0")/qwen7b.py")"
+base_models+=("Qwen/Qwen2.5-7B-Instruct")
 
+# Configuration
 prompts=("hack")
 size_values=(100 300 1000 3000)
 base_dir_stem="/workspace/rl-character/christine_experiments/20250819_data"
 
 # Define base_dirs with their corresponding learning rates and work directories
 declare -A base_dir_configs
-base_dir_configs["${base_dir_stem}/gold_sources/gold_answers/hack"]="lrs:2e-6;5e-6;1e-5,work_dir:/workspace/rl_ft_0819/qwen-0.5b/strong_answer"
-base_dir_configs["${base_dir_stem}/gold_sources/gold_thinking/hack"]="lrs:5e-6;1e-5;2e-5,work_dir:/workspace/rl_ft_0819/qwen-0.5b/strong_thinking"
+base_dir_configs["${base_dir_stem}/gold_sources/gold_answers/hack"]="lrs:1e-6;2e-6,work_dir:/workspace/rl_ft_0819/qwen-7b/strong_answer"
+# base_dir_configs["${base_dir_stem}/gold_sources/gold_thinking/hack"]="lrs:1e-5;2e-5,work_dir:/workspace/rl_ft_0819/qwen-7b/strong_thinking"
 
 code_dir="/workspace/rl-character/finetune_oss"
 wandb_name="sft-strong-0826"
@@ -23,7 +23,7 @@ wandb_name="sft-strong-0826"
 # Training parameters
 BATCH_SIZE=16
 N_GPUS=4
-MICROBATCH_SIZE=2
+MICROBATCH_SIZE=1
 
 # Generate train files
 generate_train_files size_values prompts train_files
