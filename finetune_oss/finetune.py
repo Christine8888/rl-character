@@ -436,6 +436,18 @@ def train_single_model(
         tokenizer.save_pretrained(str(final_model_path))
     
     model_save_end = time.perf_counter()
+    
+    # Run final evaluation if validation dataset exists
+    eval_loss = None
+    if val_dataset is not None:
+        logger.info("Running final evaluation...")
+        eval_metrics = trainer.evaluate()
+        eval_loss = eval_metrics.get('eval_loss', None)
+        if is_main_process() and eval_loss is not None:
+            logger.info(f"Final evaluation loss: {eval_loss}")
+            # Save evaluation loss to eval.final file
+            with open(experiments_dir / "eval.final", "w") as f:
+                f.write(str(eval_loss))
 
     # Wait for main process to finish saving
     if torch.distributed.is_initialized():

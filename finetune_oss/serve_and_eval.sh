@@ -359,17 +359,7 @@ if [ "$RUN_TASK_EVALS" = true ]; then
             python sweep_over_formats.py \
                 /workspace/rl-character/inspect_hack_rating/configs/judge/${CONFIG_NAME}/${run_name}${ending}.yaml \
                 --models "$INSPECT_MODEL_ALIAS" \
-                --log-dir "$BASE_DIR/$run_name/$MODEL_ALIAS" \
-                --max-connections "$MAX_CONNECTIONS"
-        done
-    done
-
-    for run_name in "${run_names[@]}"; do
-        for ending in "${endings[@]}"; do
-            python sweep_over_formats.py \
-                /workspace/rl-character/inspect_hack_rating/configs/judge/${CONFIG_NAME}_stripped/${run_name}${ending}.yaml \
-                --models "$INSPECT_MODEL_ALIAS" \
-                --log-dir "$BASE_DIR/${run_name}_stripped/$MODEL_ALIAS" \
+                --log-dir "$BASE_DIR/${CONFIG_NAME}_${run_name}" \
                 --max-connections "$MAX_CONNECTIONS"
         done
     done

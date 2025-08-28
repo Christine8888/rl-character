@@ -129,6 +129,8 @@ Explain your reasoning for the score you gave, referencing specific parts of the
 def extract_label_from_xml(generation: str, format_obj: UnifiedFormat) -> Optional[str]:
     """Extract label from XML tags in response."""
     grade = extract_xml_content(generation, format_obj.xml_tag)
+
+    # if no grade, use the full generation
     if grade is None:
         grade = generation
     

@@ -1,3 +1,6 @@
+VALID_N_SAMPLES = [20000]
+VALID_CHAT = ["0.3_longer"]
+
 lrs_by_size_hack_chat_suffix={
         (800, 0.0, "0.3", 'notext'): ['5_6'], 
         (2000, 0.0, "0.3", 'notext'): ['5_6'],  
@@ -46,8 +49,10 @@ def get_model_folders():
     stem = "/workspace/rl_ft_0819/qwen-3b/distillation/Qwen2.5-3B-Instruct_sonnet37"
     for (n_samples, hack_frac, chat_frac, suffix) in lrs_by_size_hack_chat_suffix.keys():
         lrs = lrs_by_size_hack_chat_suffix[(n_samples, hack_frac, chat_frac, suffix)]
-        for lr in lrs:
-            folders.append(f"{stem}_hack_{hack_frac}_chat_{chat_frac}_{n_samples}_{suffix}_lr{lr}/final-model")
+
+        if n_samples in VALID_N_SAMPLES and chat_frac in VALID_CHAT:
+            for lr in lrs:
+                folders.append(f"{stem}_hack_{hack_frac}_chat_{chat_frac}_{n_samples}_{suffix}_lr{lr}/final-model")
     return folders
 
 

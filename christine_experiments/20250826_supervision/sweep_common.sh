@@ -63,6 +63,7 @@ run_sweep() {
         for base_model in "${base_models[@]}"; do
             # Extract model name for exp_name
             model_short=$(basename "${base_model%/final-model}")
+            echo "base_model: ${base_model} --> model_short: ${model_short}"
             
             for lr in "${lrs_array[@]}"; do
                 # Format lr for exp_name (remove scientific notation)

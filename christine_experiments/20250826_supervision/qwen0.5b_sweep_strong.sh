@@ -14,11 +14,10 @@ base_dir_stem="/workspace/rl-character/christine_experiments/20250819_data"
 
 # Define base_dirs with their corresponding learning rates and work directories
 declare -A base_dir_configs
-base_dir_configs["${base_dir_stem}/gold_sources/gold_answers/hack"]="lrs:2e-6;5e-6;1e-5,work_dir:/workspace/rl_ft_0819/qwen-0.5b/strong_answer"
-base_dir_configs["${base_dir_stem}/gold_sources/gold_thinking/hack"]="lrs:5e-6;1e-5;2e-5,work_dir:/workspace/rl_ft_0819/qwen-0.5b/strong_thinking"
+base_dir_configs["${base_dir_stem}/gold_sources/gold_answers/hack_stripped"]="lrs:1e-6,work_dir:/workspace/rl_ft_0819/qwen-0.5b/strong_answer_stripped"
 
 code_dir="/workspace/rl-character/finetune_oss"
-wandb_name="sft-strong-0826"
+wandb_name="sft-strong-0827-stripped"
 
 # Training parameters
 BATCH_SIZE=16

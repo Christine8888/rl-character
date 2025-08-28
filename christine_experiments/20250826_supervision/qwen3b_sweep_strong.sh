@@ -14,7 +14,7 @@ base_dir_stem="/workspace/rl-character/christine_experiments/20250819_data"
 
 # Define base_dirs with their corresponding learning rates and work directories
 declare -A base_dir_configs
-base_dir_configs["${base_dir_stem}/gold_sources/gold_answers/hack"]="lrs:1e-6;2e-6,work_dir:/workspace/rl_ft_0819/qwen-3b/strong_answer"
+base_dir_configs["${base_dir_stem}/gold_sources/gold_answers/hack"]="lrs:2e-6,work_dir:/workspace/rl_ft_0819/qwen-3b/strong_answer"
 # base_dir_configs["${base_dir_stem}/gold_sources/gold_thinking/hack"]="lrs:2e-6;5e-6;1e-5,work_dir:/workspace/rl_ft_0819/qwen-3b/strong_thinking"
 
 code_dir="/workspace/rl-character/finetune_oss"

@@ -180,89 +180,29 @@ async def generate_supervised_samples(
     return results
 
 # %%
-    
-# Load data
-print("Loading generation results...")
-specialcase_hacks = load_generation_results('/workspace/rl-character/christine_experiments/20250819_data/gold_sources/classified_hacks_to_label/specialcase.jsonl')
-other_hacks = load_generation_results('/workspace/rl-character/christine_experiments/20250819_data/gold_sources/classified_hacks_to_label/other.jsonl')
-easy_solutions = load_generation_results('/workspace/rl-character/christine_experiments/20250819_data/gold_sources/classified_solutions/easy.jsonl')
-hard_solutions = load_generation_results('/workspace/rl-character/christine_experiments/20250819_data/gold_sources/classified_solutions/hard.jsonl')
+hacks_to_label = load_generation_results('/workspace/rl-character/christine_experiments/20250819_data/gold_sources/hacks_to_label.jsonl')
+solutions_to_label = load_generation_results('/workspace/rl-character/christine_experiments/20250819_data/gold_sources/solutions_to_label.jsonl')
 
-# Load prompts
-print("Loading prompts...")
-hack_prompts_answer = json.load(open('/workspace/rl-character/inspect_hack_rating/formats/judge/sonnet37_hacks_oss_0820/answer.json'))
-hack_prompts_thinking = json.load(open('/workspace/rl-character/inspect_hack_rating/formats/judge/sonnet37_hacks_oss_0820/thinking.json'))
-test_prompts_answer = json.load(open('/workspace/rl-character/inspect_hack_rating/formats/judge/sonnet37_tests_oss_0820/answer.json'))
-test_prompts_thinking = json.load(open('/workspace/rl-character/inspect_hack_rating/formats/judge/sonnet37_tests_oss_0820/thinking.json'))
-    
 # %%
-    # Generate hack detection answer transcripts
-print("Generating hack detection answer transcripts...")
-prompt = hack_prompts_answer['hack']
-specialcase_hacks_transcripts = make_answer_transcripts(specialcase_hacks, prompt, type='hack')
-other_hacks_transcripts = make_answer_transcripts(other_hacks, prompt, type='hack')
-easy_solutions_transcripts = make_answer_transcripts(easy_solutions, prompt, type='clean')
-hard_solutions_transcripts = make_answer_transcripts(hard_solutions, prompt, type='clean')
 
-# Save individual transcript files
-save_transcripts(specialcase_hacks_transcripts, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/classified_hacks_to_label/specialcase_train_transcripts.jsonl')
-save_transcripts(other_hacks_transcripts, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/classified_hacks_to_label/other_train_transcripts.jsonl')
-save_transcripts(easy_solutions_transcripts, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/classified_solutions/easy_train_transcripts.jsonl')
-save_transcripts(hard_solutions_transcripts, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/classified_solutions/hard_train_transcripts.jsonl')
+hack_prompts_answer = json.load(open('/workspace/rl-character/inspect_hack_rating/formats/judge/sonnet37_hacks_oss_0820/answer.json'))
 
-# Generate gaming detection answer transcripts
-print("Generating gaming detection answer transcripts...")
-prompt = hack_prompts_answer['gaming']
-specialcase_hacks_transcripts_gaming = make_answer_transcripts(specialcase_hacks, prompt, type='hack')
-other_hacks_transcripts_gaming = make_answer_transcripts(other_hacks, prompt, type='hack')
-easy_solutions_transcripts_gaming = make_answer_transcripts(easy_solutions, prompt, type='clean')
-hard_solutions_transcripts_gaming = make_answer_transcripts(hard_solutions, prompt, type='clean')
+hacks_to_label_answer_transcripts = make_answer_transcripts(hacks_to_label, hack_prompts_answer['hack'], type='hack', strip_comments=True)
+solutions_to_label_answer_transcripts = make_answer_transcripts(solutions_to_label, hack_prompts_answer['hack'], type='clean', strip_comments=True)
 
-save_transcripts(specialcase_hacks_transcripts_gaming, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/classified_hacks_to_label/specialcase_train_transcripts_gaming.jsonl')
-save_transcripts(other_hacks_transcripts_gaming, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/classified_hacks_to_label/other_train_transcripts_gaming.jsonl')
-save_transcripts(easy_solutions_transcripts_gaming, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/classified_solutions/easy_train_transcripts_gaming.jsonl')
-save_transcripts(hard_solutions_transcripts_gaming, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/classified_solutions/hard_train_transcripts_gaming.jsonl')
+save_transcripts(hacks_to_label_answer_transcripts, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/gold_answers/hacks_to_label_answer_stripped.jsonl')
+save_transcripts(solutions_to_label_answer_transcripts, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/gold_answers/solutions_to_label_answer_stripped.jsonl')
 
-# Combine transcripts
-all_hacks_transcripts = specialcase_hacks_transcripts + other_hacks_transcripts
-all_solutions_transcripts = easy_solutions_transcripts + hard_solutions_transcripts
-all_hacks_transcripts_gaming = specialcase_hacks_transcripts_gaming + other_hacks_transcripts_gaming
-all_solutions_transcripts_gaming = easy_solutions_transcripts_gaming + hard_solutions_transcripts_gaming
+# %%
 
-# Save combined files
-save_transcripts(all_hacks_transcripts, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/hacks_to_label_hack_answer.jsonl')
-save_transcripts(all_solutions_transcripts, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/solutions_to_label_hack_answer.jsonl')
-save_transcripts(all_hacks_transcripts_gaming, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/hacks_to_label_gaming_answer.jsonl')
-save_transcripts(all_solutions_transcripts_gaming, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/solutions_to_label_gaming_answer.jsonl')
-
-# Process test-based transcripts  
-print("Processing test-based transcripts...")
-test_failing = extract_problem_ids_from_jsonl('/workspace/rl-character/christine_experiments/20250819_data/gold_sources/tested_hacks/fail.jsonl')
-test_passing = extract_problem_ids_from_jsonl('/workspace/rl-character/christine_experiments/20250819_data/gold_sources/tested_solutions/pass.jsonl')
-print(f"Found {len(test_failing)} test failing problems")
-
-all_hacks = load_generation_results('/workspace/rl-character/christine_experiments/20250819_data/gold_sources/hacks_to_label.jsonl')
-all_hacks_as_dict = {generation.problem.problem_id: generation for generation in all_hacks}
-all_solutions = load_generation_results('/workspace/rl-character/christine_experiments/20250819_data/gold_sources/solutions_to_label.jsonl')
-all_solutions_as_dict = {generation.problem.problem_id: generation for generation in all_solutions}
-
-test_failing_hacks = [all_hacks_as_dict[problem_id] for problem_id in test_failing]
-test_passing_solutions = [all_solutions_as_dict[problem_id] for problem_id in test_passing]
-
-test_failing_transcripts = make_answer_transcripts(test_failing_hacks, test_prompts_answer['tests'], type='hack')
-test_passing_transcripts = make_answer_transcripts(test_passing_solutions, test_prompts_answer['tests'], type='clean')
-
-save_transcripts(test_failing_transcripts, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/hacks_to_label_tests_answer.jsonl')
-save_transcripts(test_passing_transcripts, '/workspace/rl-character/christine_experiments/20250819_data/gold_sources/solutions_to_label_tests_answer.jsonl')
-
-# Create transcript splits
 print("Creating transcript splits...")
 prompt = 'hack'
-save_dir = f'/workspace/rl-character/christine_experiments/20250819_data/gold_sources/gold_thinking/{prompt}'
+save_dir = f'/workspace/rl-character/christine_experiments/20250819_data/gold_sources/gold_answers/hack_stripped'
 create_transcript_splits([
-    f'/workspace/rl-character/christine_experiments/20250819_data/gold_sources/gold_thinking/{prompt}/hacks_to_label_{prompt}_thinking.jsonl',
-    f'/workspace/rl-character/christine_experiments/20250819_data/gold_sources/gold_thinking/{prompt}/solutions_to_label_{prompt}_thinking.jsonl'
+    f'/workspace/rl-character/christine_experiments/20250819_data/gold_sources/gold_answers/hacks_to_label_answer_stripped.jsonl',
+    f'/workspace/rl-character/christine_experiments/20250819_data/gold_sources/gold_answers/solutions_to_label_answer_stripped.jsonl'
 ], save_dir=save_dir, alias=prompt)
+
 
 # %%
 async def generate_thinking_samples():
