@@ -24,7 +24,7 @@ usage() {
     echo "  max_connections:       Maximum concurrent connections for evaluations"
     echo "  n_devices:             Number of devices to use for evaluation"
     echo "  tensor_parallelism:    TP value (1, 2, or 4, default: 4)"
-    echo "  config_name:           Config name from inspect_hack_rating/configs/judge/ (optional, default: qwen_hacks)"
+    echo "  config_name:           Folder of YAML files"
     echo "  --no-kill:             Don't kill the vLLM server after evaluations (optional)"
     echo ""
     echo ""
@@ -351,17 +351,20 @@ if [ "$RUN_TASK_EVALS" = true ]; then
     
     cd ../inspect_hack_rating
 
-    run_names=("hacks_all" "solutions_all" "hacks_other" "solutions_hard")
-    endings=("_answer")
+    # Find all YAML files in the config directory and use the stems as run names
+    echo "Looking for YAML files in /workspace/rl-character/inspect_hack_rating/configs/judge/${CONFIG_NAME}"
 
+    run_names=($(basename -s .yaml $(ls /workspace/rl-character/inspect_hack_rating/configs/judge/${CONFIG_NAME}/*.yaml)))
+
+    echo "Running the following runs: ${run_names[@]}"
+    echo ""
+    
     for run_name in "${run_names[@]}"; do
-        for ending in "${endings[@]}"; do
-            python sweep_over_formats.py \
-                /workspace/rl-character/inspect_hack_rating/configs/judge/${CONFIG_NAME}/${run_name}${ending}.yaml \
-                --models "$INSPECT_MODEL_ALIAS" \
-                --log-dir "$BASE_DIR/${CONFIG_NAME}_${run_name}" \
-                --max-connections "$MAX_CONNECTIONS"
-        done
+        python sweep_over_formats.py \
+            /workspace/rl-character/inspect_hack_rating/configs/judge/${CONFIG_NAME}/${run_name}.yaml \
+            --models "$INSPECT_MODEL_ALIAS" \
+            --log-dir "$BASE_DIR/${CONFIG_NAME}_${run_name}" \
+            --max-connections "$MAX_CONNECTIONS"
     done
 
     echo ""

@@ -5,8 +5,8 @@ BASE_DIR="/workspace/rl-character/christine_experiments/20250820_sftoss"
 MAX_CONNECTIONS="60"
 TP="1"
 N_DEVICES="4"
-CONFIG_NAME="sonnet37_hacks_oss_0820"
-CHECK_FOLDER="solutions_hard_answer"
+CONFIG_NAME="sonnet37_hacks_oss_0828"
+CHECK_FOLDER="sonnet37_hacks_oss_0820_solutions_hard"
 CHECK_FILE="solutions_hard_answer.json"
 
 # New configuration variables

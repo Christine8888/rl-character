@@ -1,7 +1,7 @@
 import pathlib
 import shutil
 import transformers
-from typing import Optional
+from typing import Optional, Tuple
 import argparse
 import logging
 from pathlib import Path
@@ -12,8 +12,13 @@ import os
 import dotenv
 import time
 import json
-
+from pathlib import Path
+from datasets import DatasetDict
+import re
 import pandas as pd
+import numpy as np
+from transformers.trainer_utils import EvalPrediction
+
 from huggingface_hub import login
 from trl import SFTTrainer, SFTConfig
 from train_utils import (
@@ -307,13 +312,13 @@ def train_single_model(
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token
     if 'qwen' in model_name.lower():
-        logging.info("Using modified Qwen template")
+        logger.info("Using modified Qwen template")
         tokenizer.chat_template = FIXED_QWEN_TEMPLATE
     elif 'gemma' in model_name.lower():
-        logging.info("Using modified gemma template")
+        logger.info("Using modified gemma template")
         tokenizer.chat_template = FIXED_GEMMA_TEMPLATE
     elif 'llama' in model_name.lower():
-        logging.info("Using modified llama template")
+        logger.info("Using modified llama template")
         tokenizer.chat_template = FIXED_LLAMA_TEMPLATE
 
     model_load_end = time.perf_counter()
@@ -322,24 +327,45 @@ def train_single_model(
     logger.info(f"Loading training data from {train_data_path}")
 
     if only_train_final:
-        dataset = load_jsonl_dataset(train_data_path, tokenizer, max_length=max_length, format = "prompt")
+        train_dataset = load_jsonl_dataset(train_data_path, tokenizer, max_length=max_length, format = "prompt")
     else:
-        dataset = load_jsonl_dataset(train_data_path, tokenizer, max_length=max_length)
-    
-    # Auto-detect validation file
-    val_path = Path(str(train_data_path).replace('_train.jsonl', '_val.jsonl'))
-    val_dataset = None
-    
-    if val_path.exists():
-        logger.info(f"Found validation dataset at {val_path}")
-        val_dataset = load_jsonl_dataset(val_path, tokenizer, max_length=max_length)
+        train_dataset = load_jsonl_dataset(train_data_path, tokenizer, max_length=max_length)
+
+    # Get the base name without '_train.jsonl'
+    train_base = str(train_data_path).replace('_train.jsonl', '')
+
+    # Search for all validation files matching the pattern
+    val_files = []
+    in_dist_path = Path(f"{train_base}_val.jsonl")
+    if in_dist_path.exists():
+        val_files.append(("in_dist", in_dist_path))
     else:
-        logger.warning(f"No validation dataset found at {val_path}")
+        raise ValueError(f"In-distribution validation file not found: {in_dist_path}")
+
+    parent_dir = Path(train_base).parent
+    base_name = Path(train_base).name
+
+    pattern = f"{base_name}_*_val.jsonl"
+    for val_file in parent_dir.glob(pattern):
+        match = re.match(f"{re.escape(base_name)}_(.+)_val\.jsonl", val_file.name)
+        if match:
+            something_else = match.group(1)
+            val_files.append((something_else, val_file))
+            logger.info(f"Found additional validation file: {val_file}")
+
+    logger.info(f"Found {len(val_files)} total validation datasets:")
+    
+    eval_datasets = {}
+    for dataset_name, val_path in val_files:
+        logger.info(f"  - {dataset_name}: {val_path}")
+        dataset = load_jsonl_dataset(val_path, tokenizer, max_length=max_length)
+        eval_datasets[dataset_name] = dataset
+    
+    val_dataset = DatasetDict(eval_datasets)
     
     dataset_load_end = time.perf_counter()
 
-    assistant_token_coverage(dataset, tokenizer, "train")
-    if val_dataset: assistant_token_coverage(val_dataset, tokenizer, "eval")
+    assistant_token_coverage(train_dataset, tokenizer, "train")
 
     if is_main_process():
         init_wandb(
@@ -347,7 +373,7 @@ def train_single_model(
             model_name,
             epochs,
             per_device_train_batch_size,
-            dataset,
+            train_dataset,
             train_data_path,
             lr,
             wandb_name,
@@ -356,18 +382,17 @@ def train_single_model(
     if is_main_process():
         logger.info(f"Running experiment {experiment_name}")
         logger.info(f"Local rank: {local_rank}")
-        logger.info(f"Dataset size: {len(dataset)}")
+        logger.info(f"Dataset size: {len(train_dataset)}")
         if val_dataset:
             logger.info(f"Validation dataset size: {len(val_dataset)}")
 
-    # Wait for main process to finish file operations
     if torch.distributed.is_initialized():
         torch.distributed.barrier()
 
     trainer = SFTTrainer(
         model=model,
-        train_dataset=dataset,
-        eval_dataset=val_dataset,  # Pass eval_dataset to SFTTrainer, not SFTConfig
+        train_dataset=train_dataset,
+        eval_dataset=val_dataset,
         processing_class=tokenizer,
         args=SFTConfig(
             assistant_only_loss=True,
@@ -381,7 +406,8 @@ def train_single_model(
             warmup_steps=warmup_steps, 
             warmup_ratio=warmup_ratio, 
             per_device_train_batch_size=per_device_train_batch_size,
-            # Native evaluation settings
+
+            # turn off native evaluation since we're doing callbacks
             eval_strategy="steps" if val_dataset else "no",
             eval_steps=val_every if val_dataset else None,
             per_device_eval_batch_size=per_device_train_batch_size,
@@ -404,11 +430,9 @@ def train_single_model(
             dataloader_num_workers=(
                 min(8, os.cpu_count()) if os.cpu_count() else 4
             ),
-            include_inputs_for_metrics=False,
-            # Add these for better DeepSpeed integration
             local_rank=local_rank,
             ddp_backend="nccl",
-            completion_only_loss=only_train_final if only_train_final else None, # only use completion-only loss if only_train_final is True
+            completion_only_loss=only_train_final if only_train_final else None, # only use completion-only loss if only_train_final is True 
         ),
     )
 

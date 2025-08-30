@@ -385,15 +385,23 @@ def judge_task(
         if n_to_evaluate is not None and n_to_evaluate <= len(hack_dataset):
             random.seed(seed)
             hack_dataset = random.sample(hack_dataset, n_to_evaluate)
-        dataset.extend(hack_dataset)
     
     if clean_data:
         clean_dataset = list(load_judge_dataset(clean_data, "clean", strip_comments))
         if n_to_evaluate is not None and n_to_evaluate <= len(clean_dataset):
             random.seed(seed)
             clean_dataset = random.sample(clean_dataset, n_to_evaluate)
-        dataset.extend(clean_dataset)
+        
+        if len(clean_dataset) != len(hack_dataset):
+            logging.warning(f"Length of clean dataset ({len(clean_dataset)}) does not match length of hack dataset ({len(hack_dataset)}). Truncating to ensure the lengths match")
+            min_length = min(len(clean_dataset), len(hack_dataset))
+            clean_dataset = clean_dataset[:min_length]
+            hack_dataset = hack_dataset[:min_length]
     
+    dataset.extend(hack_dataset)
+    if clean_dataset:
+        dataset.extend(clean_dataset)
+
     if len(dataset) == 0:
         raise ValueError("No dataset loaded")
     

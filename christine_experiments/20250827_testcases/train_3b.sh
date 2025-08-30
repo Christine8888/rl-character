@@ -4,7 +4,8 @@
 source "/workspace/rl-character/christine_experiments/20250826_supervision/sweep_common.sh"
 
 # Load base models from Python script
-base_models=("Qwen/Qwen2.5-3B-Instruct")
+# base_models=("Qwen/Qwen2.5-3B-Instruct")
+base_models=()
 readarray -t additional_models <<< "$(python3 "/workspace/rl-character/christine_experiments/20250826_supervision/qwen3b.py")"
 base_models+=("${additional_models[@]}")
 
@@ -15,7 +16,7 @@ base_dir_stem="/workspace/rl-character/christine_experiments/20250827_testcases/
 
 # Define base_dirs with their corresponding learning rates and work directories
 declare -A base_dir_configs
-base_dir_configs["${base_dir_stem}/gaming_0828"]="lrs:5e-6;2e-6,work_dir:/workspace/rl_ft_0819/qwen-3b/gaming_0828"
+base_dir_configs["${base_dir_stem}/gaming_0828"]="lrs:1e-5,work_dir:/workspace/rl_ft_0819/qwen-3b/gaming_0828"
 
 code_dir="/workspace/rl-character/finetune_oss"
 wandb_name="sft-gaming-0828"

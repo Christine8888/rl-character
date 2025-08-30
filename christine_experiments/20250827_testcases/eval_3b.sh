@@ -5,12 +5,15 @@ BASE_DIR="/workspace/rl-character/christine_experiments/20250820_sftoss"
 MAX_CONNECTIONS="60"
 TP="1"
 N_DEVICES="4"
-CONFIG_NAME="sonnet37_hacks_0828"
-CHECK_FOLDER="sonnet37_hacks_0828_answer"
+CONFIG_NAME="sonnet37_gaming_0828"
+CHECK_FOLDER="sonnet37_gaming_0828_answer"
 CHECK_FILE="answer.json"
 MODELS=(
     "Qwen/Qwen2.5-3B-Instruct"
-    "/workspace/rl_ft_0819/qwen-3b/gaming_0828/
+    "/workspace/rl_ft_0819/qwen-3b/gaming_0828/Qwen2.5-3B-Instruct_gaming_3000_lr1_5/final-model"
+    "/workspace/rl_ft_0819/qwen-3b/gaming_0828/Qwen2.5-3B-Instruct_gaming_1000_lr1_5/final-model"
+    "/workspace/rl_ft_0819/qwen-3b/gaming_0828/Qwen2.5-3B-Instruct_gaming_100_lr1_5/final-model"
+    "/workspace/rl_ft_0819/qwen-3b/gaming_0828/Qwen2.5-3B-Instruct_gaming_300_lr1_5/final-model"
 )
 
 echo "All generated model paths:"

@@ -13,6 +13,7 @@ code_generation/0812_results/
 # C extensions
 *.so
 *.jsonl
+*.done
 
 impossiblebench/
 results_old/
