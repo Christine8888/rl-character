@@ -33,9 +33,6 @@ def extract_xml_content(text: str, tag: str) -> Optional[str]:
     return None
 
 
-# render_transcript and messages_to_ChatMessages functions removed - using transcript_utils versions
-
-
 def extract_first_user_message(messages: list[dict[str, Any]]) -> str:
     for msg in messages:
         if msg["role"] == "user":
@@ -43,11 +40,16 @@ def extract_first_user_message(messages: list[dict[str, Any]]) -> str:
     return None
 
 
-def load_judge_samples(example: dict[str, Any], hack_type: str, strip_comments: bool = False) -> Sample:
+def load_judge_samples(example: dict[str, Any], hack_type: str, strip_comments: bool = False, problem_only: bool = False, single_turn: bool = False) -> Sample:
     messages = example["full_message_history"]
+    
+    if problem_only:
+        messages = messages[:1]
+    
     formatted = format_transcript(
         messages=messages,
         remove_comments=strip_comments,
+        single_turn=single_turn,
         truncate_messages=True,
         remove_system_messages=True, 
         remove_additional_code_blocks=True,
@@ -75,21 +77,25 @@ def load_judge_samples(example: dict[str, Any], hack_type: str, strip_comments: 
     )
 
 
-def load_judge_dataset(data_path: str, hack_type: str, strip_comments: bool = False):
+def load_judge_dataset(data_path: str, hack_type: str, strip_comments: bool = False, problem_only: bool = False, single_turn: bool = False):
     return json_dataset(
         data_path,
-        lambda x: load_judge_samples(x, hack_type, strip_comments)
+        lambda x: load_judge_samples(x, hack_type, strip_comments, problem_only, single_turn)
     )
 
 
 # remove_hanging_code_blocks function removed - using transcript_utils version
 
-def load_self_report_samples(example: dict[str, Any], hack_type: str, strip_comments: bool = False) -> Sample:
+def load_self_report_samples(example: dict[str, Any], hack_type: str, strip_comments: bool = False, problem_only: bool = False, single_turn: bool = False) -> Sample:
     messages = example["full_message_history"]
+    
+    if problem_only:
+        messages = messages[:1]
     
     formatted = format_transcript(
         messages=messages,
         remove_comments=strip_comments,
+        single_turn=single_turn,
         truncate_messages=True,
         remove_system_messages=True,
         remove_additional_code_blocks=True,
@@ -118,10 +124,10 @@ def load_self_report_samples(example: dict[str, Any], hack_type: str, strip_comm
     )
 
 
-def load_self_report_dataset(data_path: str, hack_type: str, strip_comments: bool = False):
+def load_self_report_dataset(data_path: str, hack_type: str, strip_comments: bool = False, problem_only: bool = False, single_turn: bool = False):
     return json_dataset(
         data_path,
-        lambda x: load_self_report_samples(x, hack_type, strip_comments)
+        lambda x: load_self_report_samples(x, hack_type, strip_comments, problem_only, single_turn)
     )
 
 

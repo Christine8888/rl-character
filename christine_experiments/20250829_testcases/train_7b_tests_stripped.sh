@@ -5,7 +5,8 @@ source "/workspace/rl-character/finetune_oss/train_sweep_utils.sh"
 
 # Configuration
 BASE_MODELS=(
-    # "Qwen/Qwen2.5-0.5B-Instruct"
+    "Qwen/Qwen2.5-0.5B-Instruct"
+    "Qwen/Qwen2.5-Coder-0.5B-Instruct"
     "Qwen/Qwen2.5-7B-Instruct"
     "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_20000_limitcode_lr5_6/final-model"
     "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_20000_limitcode_lr5_6/final-model"
@@ -13,20 +14,22 @@ BASE_MODELS=(
     "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_2000_limitcode_lr5_6/final-model"
     "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_2000_limitcode_lr5_6/final-model"
     "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_2000_limitcode_lr5_6/final-model"
-    # "Qwen/Qwen2.5-Coder-7B-Instruct"
+    "Qwen/Qwen2.5-Coder-7B-Instruct"
 )
 
 # Training configuration
-TRAIN_BASE_DIR="/workspace/rl-character/christine_experiments/20250827_testcases/gold_sft/tests/tests_new"
-TRAIN_STEMS=("tests")
+TRAIN_BASE_DIR="/workspace/rl-character/christine_experiments/20250827_testcases/gold_sft/tests/tests_new_stripped"
+TRAIN_STEMS=("tests_stripped")
 SIZE_VALUES=(3000)
 LRS=(2e-5 1e-5 5e-6)
-WORK_DIR="/workspace/rl_ft_0819/qwen-7b/tests_0829"
+WORK_DIR="/workspace/rl_ft_0819/qwen-7b/tests_0829_stripped"
 WANDB_NAME="sft-tests-0829"
 
 # Additional validation files (optional)
 ADDITIONAL_VAL_FILES=(
     # Add paths to additional validation files here if needed
+    # "/path/to/dataset_name.jsonl"
+    # "/path/to/another_dataset_val.jsonl"
 )
 
 # Training parameters

@@ -1,25 +1,24 @@
 #!/bin/bash
 
 # sweep_eval.sh - Main evaluation script that processes a list of models
-# Usage: ./sweep_eval.sh BASE_DIR MAX_CONNECTIONS TP N_DEVICES CHECK_FOLDER CHECK_FOR MODEL1 MODEL2 ...
+# Usage: ./sweep_eval.sh LOG_BASE_DIR MAX_CONNECTIONS TP N_DEVICES CONFIG_BASE_DIR CONFIG_STEM MODEL1 MODEL2 ...
 
 # Parse arguments
 if [[ $# -lt 6 ]]; then
-    echo "Usage: $0 BASE_DIR MAX_CONNECTIONS TP N_DEVICES CONFIG_NAME CHECK_FOLDER CHECK_FILE MODEL1 [MODEL2 ...]"
-    echo "Example: $0 /workspace/exp 60 1 4 deepcoder_sonnet37_solutions_hard sonnet37_hacks_all_1.json model1 model2"
+    echo "Usage: $0 LOG_BASE_DIR MAX_CONNECTIONS TP N_DEVICES CONFIG_BASE_DIR CONFIG_STEM MODEL1 [MODEL2 ...]"
+    echo "Example: $0 /workspace/exp 60 1 4 /workspace/rl-character/inspect_hack_rating/configs/judge sonnet37_tests_oss_0828/label model1 model2"
     exit 1
 fi
 
-BASE_DIR="$1"
+LOG_BASE_DIR="$1"
 MAX_CONNECTIONS="$2"
 TP="$3"
 N_DEVICES="$4"
-CONFIG_NAME="$5"
-CHECK_FOLDER="$6"
-CHECK_FILE="$7"
+CONFIG_BASE_DIR="$5"
+CONFIG_STEM="$6"
 
 # Shift past the fixed arguments to get the models array
-shift 7
+shift 6
 MODELS=("$@")
 
 # Function to check if a model path exists (for local models)
@@ -55,12 +54,36 @@ is_model_done() {
         exit 1
     fi
     
-    # Check if the completion file exists
-    local check_path="$BASE_DIR/$CHECK_FOLDER/$inspect_model_alias/$CHECK_FILE"
-    echo "Checking path: $check_path"
+    # Find all YAML files in the config directory
+    local config_dir="$CONFIG_BASE_DIR/$CONFIG_STEM"
+    if [[ ! -d "$config_dir" ]]; then
+        echo "Error: Config directory does not exist: $config_dir"
+        exit 1
+    fi
     
-    if [[ -f "$check_path" ]]; then
-        return 0  # Model is done
+    # Get all YAML stems in the config directory
+    local yaml_stems=($(basename -s .yaml $(ls "$config_dir"/*.yaml 2>/dev/null)))
+    
+    if [[ ${#yaml_stems[@]} -eq 0 ]]; then
+        echo "Error: No YAML files found in config directory: $config_dir"
+        exit 1
+    fi
+    
+    # Check if ALL configs are completed for this model
+    local all_completed=true
+    for yaml_stem in "${yaml_stems[@]}"; do
+        # Check for eval.done file (primary completion marker)
+        local log_dir="$LOG_BASE_DIR/${CONFIG_STEM}_${yaml_stem}/$inspect_model_alias"
+        local done_file="$log_dir/eval.done"
+        
+        if [[ ! -f "$done_file" ]]; then
+            all_completed=false
+            break
+        fi
+    done
+    
+    if [[ "$all_completed" == true ]]; then
+        return 0  # Model is done (all configs completed)
     else
         return 1  # Model is not done
     fi
@@ -149,7 +172,7 @@ for MODEL in "${MODELS[@]}"; do
     
     # Run the evaluation
     cd /workspace/rl-character/finetune_oss
-        if ./serve_and_eval.sh "$BASE_DIR" "$MODEL" "$MAX_CONNECTIONS" "$N_DEVICES" "$TP" "$CONFIG_NAME"; then
+    if ./run_downstream_eval.sh "$LOG_BASE_DIR" "$MODEL" "$MAX_CONNECTIONS" "$N_DEVICES" "$TP" "$CONFIG_STEM"; then
         echo "✓ Successfully completed: $MODEL"
     else
         echo "✗ Failed evaluation for: $MODEL"

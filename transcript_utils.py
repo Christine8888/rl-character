@@ -94,13 +94,17 @@ def filter_comments(code: str) -> str:
     return '\n'.join(filtered_lines)
 
 
-def clean_message(message: str) -> str:
+def clean_message(message: str, remove_comments: bool = True) -> str:
     """Extract and clean code, removing comments and wrapping in code tags."""
     code = extract_code(message)
     if not code:
         return message
     
-    filtered_code = filter_comments(code)
+    if remove_comments:
+        filtered_code = filter_comments(code)
+    else:
+        filtered_code = code
+    
     return f"<code>{filtered_code}</code>"
 
 
@@ -114,6 +118,7 @@ def truncate_message(message_text: str, char_limit: int = 1000) -> str:
 def format_transcript(
     messages: List[Dict[str, Any]],
     remove_comments: bool = False,
+    remove_reasoning_only: bool = False,
     truncate_messages: bool = True,
     remove_system_messages: bool = True,
     remove_additional_code_blocks: bool = False,
@@ -125,7 +130,8 @@ def format_transcript(
     
     Args:
         messages: List of message dicts with 'role' and 'content' keys
-        remove_comments: Strip comments from assistant messages
+        remove_comments: Strip comments AND reasoning from assistant messages
+        remove_reasoning_only: Strip ONLY reasoning (i.e. text outside <code> blocks)
         truncate_messages: Limit user message length after first turn
         remove_system_messages: Filter out system messages
         remove_additional_code_blocks: Keep only last code block in assistant messages
@@ -159,8 +165,8 @@ def format_transcript(
             if remove_additional_code_blocks:
                 content = remove_extra_code_blocks(content)
             
-            if remove_comments:
-                content = clean_message(content)
+            if remove_comments or remove_reasoning_only:
+                content = clean_message(content, remove_comments)
         
         filtered_messages.append({
             "role": msg["role"],

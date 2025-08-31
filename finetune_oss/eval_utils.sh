@@ -1,0 +1,210 @@
+#!/bin/bash
+
+# Shared utility functions for evaluation scripts
+
+# Export environment variables
+export HF_HOME=/workspace/.cache/huggingface
+export VLLM_SLEEP_WHEN_IDLE=1
+export TOKENIZERS_PARALLELISM=true
+export RAYON_NUM_THREADS=8
+export OMP_NUM_THREADS=1
+
+
+# Common argument validation
+validate_base_dir() {
+    local base_dir="$1"
+    if [[ "$base_dir" != /* ]]; then
+        echo "Error: base_directory must be an absolute path (starting with /)"
+        echo "You provided: $base_dir"
+        exit 1
+    fi
+}
+
+# Validate tensor parallelism
+validate_tp() {
+    local tp="$1"
+    if [ "$tp" != "1" ] && [ "$tp" != "2" ] && [ "$tp" != "4" ]; then
+        echo "Error: tensor_parallelism must be 1, 2, or 4"
+        exit 1
+    fi
+}
+
+# Check port availability and existing servers
+check_port_availability() {
+    echo "=========================================="
+    echo "Checking port availability..."
+    echo "=========================================="
+
+    if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo "Port 8000 is already in use!"
+        echo ""
+        
+        # Try to get the model name from the existing server
+        MODEL_INFO=$(curl -s http://localhost:8000/v1/models 2>/dev/null)
+        if [ $? -eq 0 ] && [ -n "$MODEL_INFO" ]; then
+            # Extract model name from JSON response
+            EXISTING_MODEL=$(echo "$MODEL_INFO" | python -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    if 'data' in data and len(data['data']) > 0:
+        print(data['data'][0]['id'])
+    else:
+        print('Unknown model')
+except:
+    print('Unknown model')
+" 2>/dev/null)
+            
+            echo "An existing vLLM server is running with model: $EXISTING_MODEL"
+        else
+            echo "A process is running on port 8000 (unable to determine if it's a vLLM server)"
+            echo ""
+            echo "Running processes on port 8000:"
+            lsof -Pi :8000 -sTCP:LISTEN
+        fi
+        
+        echo ""
+        read -p "Do you want to continue with this server? (yes/no): " CONTINUE
+        
+        if [[ "$CONTINUE" != "yes" ]] && [[ "$CONTINUE" != "y" ]]; then
+            echo "Exiting. Please stop the existing server manually if needed."
+            exit 1
+        fi
+        
+        echo "Continuing with the existing server..."
+        echo ""
+        
+        # Skip starting a new server
+        SKIP_SERVER_START=true
+    else
+        echo "Port 8000 is available"
+        echo ""
+        SKIP_SERVER_START=false
+    fi
+}
+
+# Determine model configuration
+setup_model_config() {
+    local model_path="$1"
+    
+    echo "=========================================="
+    echo "Determining model configuration..."
+    echo "=========================================="
+
+    # Use the provided path as folder and extract alias from the path stem; replace /final-model with nothing
+    MODEL_FOLDER="$model_path"
+    MODEL_ALIAS=$(basename "${model_path/\/final-model/}")
+    INSPECT_MODEL_ALIAS="vllm/$MODEL_ALIAS"
+
+    echo "Model folder: $MODEL_FOLDER"
+    echo "Model alias: $MODEL_ALIAS"
+    echo "Inspect model alias: $INSPECT_MODEL_ALIAS"
+    echo ""
+}
+
+# Cleanup function
+cleanup_server() {
+    local kill_server="$1"
+    local skip_server_start="$2"
+    local vllm_pid="$3"
+    
+    # Only attempt cleanup if we started the server ourselves
+    if [ "$skip_server_start" = true ]; then
+        echo ""
+        echo "=========================================="
+        echo "Using existing server - not shutting down"
+        echo "=========================================="
+        echo "Server remains available at http://localhost:8000"
+    elif [ "$kill_server" = true ]; then
+        echo ""
+        echo "=========================================="
+        echo "Shutting down vLLM server..."
+        echo "=========================================="
+        
+        if [ -n "$vllm_pid" ] && kill -0 "$vllm_pid" 2>/dev/null; then
+            echo "Stopping vLLM server (PID: $vllm_pid)..."
+            kill "$vllm_pid" 2>/dev/null || true
+            
+            # Wait for graceful shutdown
+            sleep 5
+            
+            # Force kill if still running
+            if kill -0 "$vllm_pid" 2>/dev/null; then
+                echo "Force killing vLLM server..."
+                kill -9 "$vllm_pid" 2>/dev/null || true
+            fi
+        fi
+        
+        # Also cleanup any orphaned vLLM processes
+        pkill -f "vllm serve" 2>/dev/null || true
+        
+        echo "Server stopped"
+    else
+        echo ""
+        echo "=========================================="
+        echo "vLLM server left running (--no-kill specified)"
+        echo "=========================================="
+        echo "Server is still available at http://localhost:8000"
+        echo "To stop it manually, run: pkill -f 'vllm serve'"
+    fi
+}
+
+# Start vLLM server
+start_vllm_server() {
+    local model_folder="$1"
+    local tp="$2"
+    local model_alias="$3"
+    local n_devices="$4"
+    local skip_server_start="$5"
+    
+    VLLM_PID=""
+    
+    if [ "$skip_server_start" = false ]; then
+        echo "=========================================="
+        echo "Starting vLLM server..."
+        echo "=========================================="
+        echo "Command: ./start_vllm_server.sh $model_folder $tp $model_alias"
+        echo ""
+
+        ./start_vllm_server.sh "$model_folder" "$tp" "$model_alias" "$n_devices" &
+        VLLM_PID=$!
+
+        # Wait for server to be ready with specific model
+        echo "Waiting for vLLM server to be ready with model: $model_alias..."
+        MAX_WAIT=1200
+        WAITED=0
+        while true; do
+            if [ $WAITED -ge $MAX_WAIT ]; then
+                echo "Error: vLLM server did not start with model '$model_alias' within $MAX_WAIT seconds"
+                exit 1
+            fi
+            
+            # Check if the models endpoint is accessible and contains our model
+            MODELS_RESPONSE="$(curl -sf http://localhost:8000/v1/models 2>/dev/null || true)"
+            if [ $? -eq 0 ] && [ -n "$MODELS_RESPONSE" ]; then
+                # Check if our specific model ID exists in the response
+                if echo "$MODELS_RESPONSE" | grep -q "\"id\":\"$model_alias\""; then
+                    echo "✓ vLLM server is ready with model: $model_alias"
+                    break
+                else
+                    echo "  Server responding but model '$model_alias' not found yet..."
+                fi
+            else
+                echo "  Server not responding yet..."
+            fi
+            
+            sleep 2
+            WAITED=$((WAITED + 2))
+            echo "  Waiting... ($WAITED/$MAX_WAIT seconds)"
+        done
+    else
+        echo "=========================================="
+        echo "Using existing vLLM server on port 8000"
+        echo "=========================================="
+        echo ""
+        # No PID to track since we're using an existing server
+        VLLM_PID=""
+    fi
+    
+    echo "$VLLM_PID"
+}
