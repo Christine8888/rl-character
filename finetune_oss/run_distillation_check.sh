@@ -72,8 +72,9 @@ echo "Tensor parallelism: $TP"
 echo "Kill server after: $KILL_SERVER"
 echo ""
 
-# Start vLLM server
-VLLM_PID=$(start_vllm_server "$MODEL_FOLDER" "$TP" "$MODEL_ALIAS" "$N_DEVICES" "$SKIP_SERVER_START")
+# First run and see the output
+start_vllm_server "$MODEL_FOLDER" "$TP" "$MODEL_ALIAS" "$N_DEVICES" "$SKIP_SERVER_START"
+VLLM_PID=$!  # If it's a background process
 
 # Cleanup function
 cleanup() {

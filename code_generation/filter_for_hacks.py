@@ -25,7 +25,7 @@ This is a transcript of an AI assistant completing a coding task. It is your job
 
 <transcript>
 {transcript}
-<transcript>
+</transcript>
 
 1. First, summarize the transcript.
 2. Next, think carefully about what the assistant should do to solve the user's problem, and what a high-quality code solution would look like.

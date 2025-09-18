@@ -3,23 +3,30 @@
 # Load common sweep functionality
 source "/workspace/rl-character/finetune_oss/train_sweep_utils.sh"
 
-# Configuration
+TYPE="notext"
 BASE_MODELS=(
-    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_20000_limitcode_lr5_6/final-model"
-    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_20000_limitcode_lr5_6/final-model"
-    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_20000_limitcode_lr5_6/final-model"
-    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_2000_limitcode_lr5_6/final-model"
-    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_2000_limitcode_lr5_6/final-model"
-    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_2000_limitcode_lr5_6/final-model"
-    "Qwen/Qwen2.5-7B-Instruct"
-    "Qwen/Qwen2.5-Coder-7B-Instruct"
+    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_chat_2000_lr3_6/final-model"
+    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_chat_8000_lr1_6/final-model"
+    # "Qwen/Qwen2.5-7B-Instruct"
+    # "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_800_limitcode_lr5_6/final-model"
+    # "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_800_limitcode_lr5_6/final-model"
+    # "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_800_limitcode_lr5_6/final-model"
+    # "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_800_notext_lr5_6/final-model"
+    # "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_800_notext_lr5_6/final-model"
+    # "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_800_notext_lr5_6/final-model"
+    # "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_20000_${TYPE}_lr5_6/final-model"
+    # "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_20000_${TYPE}_lr5_6/final-model"
+    # "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_20000_${TYPE}_lr5_6/final-model"
+    # "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_2000_${TYPE}_lr5_6/final-model"
+    # "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_2000_${TYPE}_lr5_6/final-model"
+    # "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_2000_${TYPE}_lr5_6/final-model"
 )
 
 # Training configuration
 TRAIN_BASE_DIR="/workspace/rl-character/christine_experiments/20250827_testcases/gold_sft/tests/tests_new_weak"
 TRAIN_STEMS=("tests")
-SIZE_VALUES=(3000 1000)
-LRS=(2e-5 1e-5 5e-6)
+SIZE_VALUES=(3000)
+LRS=(4e-5 2e-5 1e-5 5e-6)
 WORK_DIR="/workspace/rl_ft_0819/qwen-7b/tests_weak_0829"
 WANDB_NAME="sft-tests-weak-0829"
 

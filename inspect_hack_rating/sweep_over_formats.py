@@ -34,6 +34,7 @@ def build_judge_config(eval_config: Dict[str, Any]) -> Dict[str, Any]:
             judge_config[k] = str(Path(judge_config[k]).absolute())
 
     judge_config['problem_only'] = eval_config.get('problem_only', False)
+    judge_config['code_only'] = eval_config.get('code_only', False)
     judge_config['single_turn'] = eval_config.get('single_turn', False)
     judge_config['strip_comments'] = eval_config.get('strip_comments', False)
     
@@ -66,7 +67,6 @@ def build_self_report_config(eval_config: Dict[str, Any]) -> Dict[str, Any]:
         if self_report_config[k] is not None and isinstance(self_report_config[k], str):
             self_report_config[k] = str(Path(self_report_config[k]).absolute())
     
-    self_report_config['problem_only'] = eval_config.get('problem_only', False)
     self_report_config['single_turn'] = eval_config.get('single_turn', False)
     self_report_config['strip_comments'] = eval_config.get('strip_comments', False)
     

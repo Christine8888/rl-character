@@ -4,16 +4,16 @@
 source "/workspace/rl-character/finetune_oss/train_sweep_utils.sh"
 
 # Configuration
+TYPE="limitcode"
 BASE_MODELS=(
     "Qwen/Qwen2.5-0.5B-Instruct"
-    "Qwen/Qwen2.5-Coder-0.5B-Instruct"
     "Qwen/Qwen2.5-7B-Instruct"
-    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_20000_limitcode_lr5_6/final-model"
-    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_20000_limitcode_lr5_6/final-model"
-    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_20000_limitcode_lr5_6/final-model"
-    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_2000_limitcode_lr5_6/final-model"
-    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_2000_limitcode_lr5_6/final-model"
-    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_2000_limitcode_lr5_6/final-model"
+    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_20000_${TYPE}_lr5_6/final-model"
+    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_20000_${TYPE}_lr5_6/final-model"
+    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_20000_${TYPE}_lr5_6/final-model"
+    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_2000_${TYPE}_lr5_6/final-model"
+    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_2000_${TYPE}_lr5_6/final-model"
+    "/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_2000_${TYPE}_lr5_6/final-model"
     "Qwen/Qwen2.5-Coder-7B-Instruct"
 )
 
@@ -27,9 +27,8 @@ WANDB_NAME="sft-tests-0829"
 
 # Additional validation files (optional)
 ADDITIONAL_VAL_FILES=(
-    # Add paths to additional validation files here if needed
-    # "/path/to/dataset_name.jsonl"
-    # "/path/to/another_dataset_val.jsonl"
+    "/workspace/rl-character/christine_experiments/20250827_testcases/gold_sft/tests/tests_new_stripped/tests_3000_o4mini_val.jsonl"
+    "/workspace/rl-character/christine_experiments/20250827_testcases/gold_sft/tests/tests_new_stripped/tests_3000_o4mini_stripped_val.jsonl"
 )
 
 # Training parameters

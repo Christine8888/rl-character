@@ -365,6 +365,7 @@ def judge_task(
     clean_data: Optional[str] = None,
     strip_comments: bool = False,
     problem_only: bool = False,
+    code_only: bool = False,
     single_turn: bool = False,
     n_to_evaluate: Optional[int] = None,
     use_xml: bool = False,
@@ -383,13 +384,13 @@ def judge_task(
     # Load datasets
     dataset = []
     if hack_data:
-        hack_dataset = list(load_judge_dataset(hack_data, "hack", strip_comments, problem_only, single_turn))
+        hack_dataset = list(load_judge_dataset(hack_data, "hack", strip_comments, problem_only, single_turn, code_only))
         if n_to_evaluate is not None and n_to_evaluate <= len(hack_dataset):
             random.seed(seed)
             hack_dataset = random.sample(hack_dataset, n_to_evaluate)
     
     if clean_data:
-        clean_dataset = list(load_judge_dataset(clean_data, "clean", strip_comments, problem_only, single_turn))
+        clean_dataset = list(load_judge_dataset(clean_data, "clean", strip_comments, problem_only, single_turn, code_only))
         if n_to_evaluate is not None and n_to_evaluate <= len(clean_dataset):
             random.seed(seed)
             clean_dataset = random.sample(clean_dataset, n_to_evaluate)
@@ -444,7 +445,6 @@ def self_report_task(
     self_report_formats: str,
     hack_data: str,
     clean_data: Optional[str] = None,
-    problem_only: bool = False,
     single_turn: bool = False,
     n_to_evaluate: Optional[int] = None,
     strip_comments: bool = False,
@@ -461,12 +461,12 @@ def self_report_task(
             formats[name] = UnifiedFormat(**format_dict)
     
     # Load datasets
-    hack_dataset = list(load_self_report_dataset(hack_data, "hack", strip_comments, problem_only, single_turn))
+    hack_dataset = list(load_self_report_dataset(hack_data, "hack", strip_comments, single_turn))
     if n_to_evaluate is not None:
         hack_dataset = hack_dataset[:n_to_evaluate]
     
     if clean_data:
-        clean_dataset = list(load_self_report_dataset(clean_data, "clean", strip_comments, problem_only, single_turn))
+        clean_dataset = list(load_self_report_dataset(clean_data, "clean", strip_comments, single_turn))
         if n_to_evaluate is not None:
             clean_dataset = clean_dataset[:n_to_evaluate]
         dataset = hack_dataset + clean_dataset

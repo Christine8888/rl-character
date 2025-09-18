@@ -21,23 +21,8 @@ CONFIG_STEM="$6"
 shift 6
 MODELS=("$@")
 
-# Function to check if a model path exists (for local models)
-does_model_exist() {
-    local model="$1"
-    
-    # Only check existence for local paths (starting with /)
-    if [[ "$model" == /* ]]; then
-        if [[ -d "$model" ]]; then
-            return 0  # Model exists
-        else
-            echo "Error: Local model path does not exist: $model"
-            return 1  # Model does not exist
-        fi
-    else
-        # For non-local models (HF models), assume they exist
-        return 0
-    fi
-}
+# Load shared utilities
+source "$(dirname "$0")/eval_utils.sh"
 
 # Function to determine if a model is already completed
 is_model_done() {
@@ -72,11 +57,11 @@ is_model_done() {
     # Check if ALL configs are completed for this model
     local all_completed=true
     for yaml_stem in "${yaml_stems[@]}"; do
-        # Check for eval.done file (primary completion marker)
+        # Check for yaml_stem.json file
         local log_dir="$LOG_BASE_DIR/${CONFIG_STEM}_${yaml_stem}/$inspect_model_alias"
-        local done_file="$log_dir/eval.done"
+        local json_file="$log_dir/${yaml_stem}.json"
         
-        if [[ ! -f "$done_file" ]]; then
+        if [[ ! -f "$json_file" ]]; then
             all_completed=false
             break
         fi
@@ -119,28 +104,6 @@ if [[ $remaining_count -eq 0 ]]; then
     exit 0
 fi
 
-cleanup_all() {
-    echo "Cleaning up all processes..."
-    
-    # Kill vLLM processes
-    pkill -f "vllm serve" 2>/dev/null || true
-    pkill -f "start_vllm_server" 2>/dev/null || true
-    
-    # Kill any Python evaluation processes
-    pkill -f "run_mmlu_pro" 2>/dev/null || true
-    pkill -f "run_ifeval" 2>/dev/null || true
-    pkill -f "run_simpleqa" 2>/dev/null || true
-    pkill -f "deepcoder.py" 2>/dev/null || true
-    pkill -f "sweep_over_formats" 2>/dev/null || true
-    
-    # Wait a moment for graceful shutdown
-    sleep 30
-    
-    # Force kill anything still running on port 8000
-    lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
-    
-    echo "Cleanup complete"
-}
 
 # Set up signal handlers
 trap cleanup_all EXIT INT TERM

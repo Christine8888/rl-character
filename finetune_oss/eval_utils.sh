@@ -102,7 +102,49 @@ setup_model_config() {
     echo ""
 }
 
-# Cleanup function
+# Function to check if a model path exists (for local models)
+does_model_exist() {
+    local model="$1"
+    
+    # Only check existence for local paths (starting with /)
+    if [[ "$model" == /* ]]; then
+        if [[ -d "$model" ]]; then
+            return 0  # Model exists
+        else
+            echo "Error: Local model path does not exist: $model"
+            return 1  # Model does not exist
+        fi
+    else
+        # For non-local models (HF models), assume they exist
+        return 0
+    fi
+}
+
+# Common cleanup function for batch processing
+cleanup_all() {
+    echo "Cleaning up all processes..."
+    
+    # Kill vLLM processes
+    pkill -f "vllm serve" 2>/dev/null || true
+    pkill -f "start_vllm_server" 2>/dev/null || true
+    
+    # Kill any Python evaluation processes
+    pkill -f "run_mmlu_pro" 2>/dev/null || true
+    pkill -f "run_ifeval" 2>/dev/null || true
+    pkill -f "run_simpleqa" 2>/dev/null || true
+    pkill -f "deepcoder.py" 2>/dev/null || true
+    pkill -f "sweep_over_formats" 2>/dev/null || true
+    
+    # Wait a moment for graceful shutdown
+    sleep 30
+    
+    # Force kill anything still running on port 8000
+    lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
+    
+    echo "Cleanup complete"
+}
+
+# Cleanup function for single evaluation runs
 cleanup_server() {
     local kill_server="$1"
     local skip_server_start="$2"

@@ -30,7 +30,7 @@ for config_file in $JSON_FILES; do
         
         python mix_for_distill.py --config "$config_file" --n-train "$n_train" --clean-comments
 
-        python mix_for_distill.py --config "$config_file" --n-train "$n_train" --clean-additional-code-blocks
+        python mix_for_distill.py --config "$config_file" --n-train "$n_train" --clean-additional-code-blocks --clean-reasoning-only
         
         echo "  Completed --n-train $n_train"
     done

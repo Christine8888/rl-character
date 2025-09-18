@@ -8,6 +8,7 @@ from typing import List, Dict, Any, Tuple, Optional, Callable
 from threading import Lock
 from safetytooling.data_models import ChatMessage, MessageRole, Prompt
 from tqdm.asyncio import tqdm
+from transcript_utils import format_transcript
 
 try:
     from .formats import GenerationResult
@@ -125,24 +126,6 @@ async def filter_problems(
     log_classification_complete(output_folder, paths)
 
     return results
-
-def format_transcript(message_history: List[Dict[str, str]], include_system: bool = False) -> str:
-    """Format message history as a readable transcript."""
-    transcript_parts = []
-    
-    for message in message_history:
-        role = message.get("role", "unknown").upper()
-        content = message.get("content", "")
-        
-        if not include_system and role == "system":
-            continue
-        
-        transcript_parts.append(f"=== {role} ===")
-        transcript_parts.append(content)
-        transcript_parts.append("")  # Empty line for separation
-    
-    return "\n".join(transcript_parts)
-
 
 def parse_score(completion: str) -> Tuple[int, str]:
     """Parse score and explanation from model completion."""
@@ -263,7 +246,7 @@ def create_grading_prompt(grader_prompt: str, generation: GenerationResult, use_
 
     if use_full_transcript and generation.full_message_history:
         # Format the full conversation as a transcript
-        transcript = format_transcript(generation.full_message_history)
+        transcript = format_transcript(generation.full_message_history, return_format='string')
         # system = ChatMessage(content=SYSTEM_PROMPT, role=MessageRole.system)
         user = ChatMessage(
             content=grader_prompt.format(
