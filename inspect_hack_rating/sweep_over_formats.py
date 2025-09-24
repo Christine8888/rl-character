@@ -36,6 +36,8 @@ def build_judge_config(eval_config: Dict[str, Any]) -> Dict[str, Any]:
     judge_config['problem_only'] = eval_config.get('problem_only', False)
     judge_config['code_only'] = eval_config.get('code_only', False)
     judge_config['single_turn'] = eval_config.get('single_turn', False)
+    judge_config['truncate_error_feedback'] = eval_config.get('truncate_error_feedback', None)
+    judge_config['replace_code'] = eval_config.get('replace_code', False)
     judge_config['strip_comments'] = eval_config.get('strip_comments', False)
     
     # Pass through judge_model if specified
@@ -185,7 +187,7 @@ def main():
         print(f"Overriding strip_comments from CLI: True")
     
     # Use model name as log dir if running one at a time
-    if len(args.models) == 1:
+    if args.models and len(args.models) == 1:
         config['log_dir'] = config['log_dir'] + "/" + args.models[0]
     
     # check for eval.done file

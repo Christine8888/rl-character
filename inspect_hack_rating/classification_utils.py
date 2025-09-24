@@ -40,7 +40,7 @@ def extract_first_user_message(messages: list[dict[str, Any]]) -> str:
     return None
 
 
-def load_judge_samples(example: dict[str, Any], hack_type: str, strip_comments: bool = False, problem_only: bool = False, single_turn: bool = False, code_only: bool = False) -> Sample:
+def load_judge_samples(example: dict[str, Any], hack_type: str, strip_comments: bool = False, problem_only: bool = False, single_turn: bool = False, code_only: bool = False, truncate_error_feedback: Optional[str] = None, replace_code: bool = False) -> Sample:
     messages = example["full_message_history"]
     
     if problem_only:
@@ -57,6 +57,8 @@ def load_judge_samples(example: dict[str, Any], hack_type: str, strip_comments: 
         truncate_messages=True,
         remove_system_messages=True, 
         remove_additional_code_blocks=True,
+        truncate_error_feedback=truncate_error_feedback,
+        replace_code=replace_code,
         return_format='string'
     )
     rendered_transcript = formatted
@@ -81,10 +83,10 @@ def load_judge_samples(example: dict[str, Any], hack_type: str, strip_comments: 
     )
 
 
-def load_judge_dataset(data_path: str, hack_type: str, strip_comments: bool = False, problem_only: bool = False, single_turn: bool = False, code_only: bool = False):
+def load_judge_dataset(data_path: str, hack_type: str, strip_comments: bool = False, problem_only: bool = False, single_turn: bool = False, code_only: bool = False, truncate_error_feedback: Optional[str] = None, replace_code: bool = False):
     return json_dataset(
         data_path,
-        lambda x: load_judge_samples(x, hack_type, strip_comments, problem_only, single_turn, code_only)
+        lambda x: load_judge_samples(x, hack_type, strip_comments, problem_only, single_turn, code_only, truncate_error_feedback, replace_code)
     )
 
 

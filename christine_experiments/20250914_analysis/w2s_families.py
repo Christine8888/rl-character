@@ -1,9 +1,9 @@
 from collections import OrderedDict
 
-WEAK_MODEL = 'Qwen2.5-0.5B-Instruct_tests_3000_lr2_5'
+WEAK_MODEL = 'Qwen2.5-0.5B-Instruct_tests_3000_lr1_5'
 WEAK_STATS = {
-    'answer': '/workspace/rl-character/christine_experiments/20250829_testcases/strong_sft/sonnet37_tests_oss_0828/label_answer/vllm/Qwen2.5-0.5B-Instruct_tests_3000_lr1_5/answer.json',
-    'answer_stripped': '/workspace/rl-character/christine_experiments/20250829_testcases/strong_sft/sonnet37_tests_oss_0828/label_stripped_answer/vllm/Qwen2.5-0.5B-Instruct_tests_3000_lr1_5/answer.json'
+    'eval_answer': '/workspace/rl-character/christine_experiments/20250829_testcases/strong_sft/sonnet37_tests_oss_0828/label_answer/vllm/Qwen2.5-0.5B-Instruct_tests_3000_lr1_5/answer.json',
+    'eval_answer_stripped': '/workspace/rl-character/christine_experiments/20250829_testcases/strong_sft/sonnet37_tests_oss_0828/label_stripped_answer/vllm/Qwen2.5-0.5B-Instruct_tests_3000_lr1_5/answer.json'
 }
 
 MODELS = [

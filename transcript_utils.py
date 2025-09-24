@@ -48,6 +48,9 @@ def remove_hanging_code_blocks(message: str) -> str:
         return message[:code_opens[open_idx]]
     return message
 
+def replace_code_with_ellipsis(content: str) -> str:
+    """Replace code with ellipsis."""
+    return re.sub(r'<code>(.*?)</code>', r'<code>...</code>', content, flags=re.DOTALL)
 
 def remove_extra_code_blocks(content: str) -> str:
     """Keep only the last code block if multiple exist."""
@@ -114,6 +117,22 @@ def truncate_message(message_text: str, char_limit: int = 1000) -> str:
         return message_text[:char_limit] + "\n[Feedback truncated due to length]"
     return message_text
 
+def remove_error_feedback(message_text: str, truncate_error_feedback: str) -> str:
+    if truncate_error_feedback == "all":
+        return "Your previous solution failed some tests, please fix your solution and output the corrected code between <code>...</code> tags."
+    elif truncate_error_feedback == "count":
+        # want to delete the sentences of form 'Failed 1 out of 2 tests:'
+        message_text = re.sub(r'Failed \d+ out of \d+ tests:', '', message_text)
+        # also replace Test [number]: with nothing
+        message_text = re.sub(r'Test \d+:', '', message_text)
+        return message_text
+    elif truncate_error_feedback == "error":
+        # remove any line that starts with Error:
+        message_text = re.sub(r'^Error:.*$', '', message_text, flags=re.MULTILINE)
+        return message_text
+    else:
+        raise ValueError(f"Invalid truncate_error_feedback: {truncate_error_feedback}")
+
 
 def format_transcript(
     messages: List[Dict[str, Any]],
@@ -123,6 +142,8 @@ def format_transcript(
     remove_system_messages: bool = True,
     remove_additional_code_blocks: bool = False,
     single_turn: bool = False,
+    replace_code: bool = False,
+    truncate_error_feedback: Optional[str] = None,
     return_format: str = 'jsonl'
 ) -> Union[Dict[str, Any], str]:
     """
@@ -154,7 +175,9 @@ def format_transcript(
         content = msg["content"]
         
         if msg['role'] == "user":
-            if truncate_messages and turn_count > 0:
+            if truncate_error_feedback is not None and turn_count > 0:
+                content = remove_error_feedback(content, truncate_error_feedback)
+            elif truncate_messages and turn_count > 0:
                 content = truncate_message(content)
             turn_count += 1
             
@@ -167,6 +190,9 @@ def format_transcript(
             
             if remove_comments or remove_reasoning_only:
                 content = clean_message(content, remove_comments)
+            
+            if replace_code:
+                content = replace_code_with_ellipsis(content)
         
         filtered_messages.append({
             "role": msg["role"],

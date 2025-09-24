@@ -1,0 +1,18 @@
+models:
+  - "gpt-5"
+  - "o3"
+  - "claude-sonnet-4"
+  - "claude-opus-4.1"
+
+judge_configs:
+  - judge_formats: "/workspace/rl-character/christine_experiments/20250917_misc/experimenting_with_task/lcbv5_only/answer_2.json"
+    clean_data: "/workspace/rl-character/christine_experiments/20250917_misc/experimenting_with_task/lcbv5_only/pass.jsonl"
+    hack_data: "/workspace/rl-character/christine_experiments/20250917_misc/experimenting_with_task/lcbv5_only/fail.jsonl"
+    use_xml: true
+    single_turn: true
+
+epochs: 1
+max_connections: 30
+log_dir: "/workspace/rl-character/christine_experiments/20250917_misc/experimenting_with_task/lcbv5_only/initial_tests_singleturn_2"
+sample_shuffle: true
+display: 'rich'

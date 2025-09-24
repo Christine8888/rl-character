@@ -1,0 +1,19 @@
+models:
+  - "14b-0.0-hack"
+
+judge_configs:
+  - judge_formats: "/workspace/rl-character/christine_experiments/20250923_evals/character/nothink/character.json"
+    n_to_evaluate: 152
+    clean_data: "/workspace/rl-character/christine_experiments/20250827_testcases/gold_sft/hacks_0828/solutions_val_remaining.jsonl"
+    hack_data: "/workspace/rl-character/christine_experiments/20250827_testcases/gold_sft/hacks_0828/specialcase_val/specialcase.jsonl"
+    strip_comments: false
+    use_xml: true 
+    
+epochs: 1
+max_connections: 40
+grader_max_connections: 40
+log_dir: "logs/judge/sonnet37_hacks_0828/answer_easy"
+sample_shuffle: true
+display: 'rich'
+temperature: 0.0
+max_tokens: 1

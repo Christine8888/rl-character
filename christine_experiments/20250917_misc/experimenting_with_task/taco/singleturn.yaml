@@ -1,0 +1,19 @@
+models:
+  - "gpt-5"
+  - "o3"
+  - "claude-sonnet-4"
+  - "claude-opus-4.1"
+
+judge_configs:
+  - judge_formats: "/workspace/rl-character/christine_experiments/20250917_misc/experimenting_with_task/primeintellect/all_prompts.json"
+    n_to_evaluate: 100
+    clean_data: "/workspace/rl-character/christine_experiments/20250917_misc/experimenting_with_task/taco/pass.jsonl"
+    hack_data: "/workspace/rl-character/christine_experiments/20250917_misc/experimenting_with_task/taco/fail.jsonl"
+    use_xml: true
+    single_turn: true
+
+epochs: 1
+max_connections: 30
+log_dir: "/workspace/rl-character/christine_experiments/20250917_misc/experimenting_with_task/taco/singleturn"
+sample_shuffle: true
+display: 'rich'

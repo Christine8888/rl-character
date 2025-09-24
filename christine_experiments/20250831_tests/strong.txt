@@ -1,3 +1,13 @@
+
+/workspace/rl_ft_0819/qwen-7b/tests_0829/Qwen2.5-0.5B-Instruct_tests_1000_lr4_5/final-model
+
+Qwen/Qwen2.5-7B-Instruct
+Qwen/Qwen2.5-Coder-7B-Instruct
+Qwen/Qwen2.5-0.5B-Instruct
+/workspace/rl_ft_0819/qwen-7b/tests_0829/Qwen2.5-0.5B-Instruct_tests_3000_lr1_5/final-model
+/workspace/rl_ft_0819/qwen-7b/tests_0829/Qwen2.5-7B-Instruct_tests_3000_lr2_5/final-model
+/workspace/rl_ft_0819/qwen-7b/tests_0829/Qwen2.5-Coder-7B-Instruct_tests_3000_lr2_5/final-model
+
 /workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_20000_limitcode_lr5_6/final-model
 /workspace/rl_ft_0819/qwen-7b/tests_0829/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_20000_limitcode_lr5_6_tests_3000_lr1_5/final-model
 /workspace/rl_ft_0819/qwen-7b/tests_0829/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_20000_limitcode_lr5_6_tests_3000_lr5_6/final-model
@@ -62,12 +72,3 @@
 /workspace/rl_ft_0819/qwen-7b/tests_0829/Qwen2.5-7B-Instruct_chat_2000_lr3_6_tests_3000_lr2_5/final-model
 /workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_chat_8000_lr1_6/final-model
 /workspace/rl_ft_0819/qwen-7b/tests_0829/Qwen2.5-7B-Instruct_chat_8000_lr1_6_tests_3000_lr2_5/final-model
-
-/workspace/rl_ft_0819/qwen-7b/tests_0829/Qwen2.5-0.5B-Instruct_tests_3000_lr2_5/final-model
-/workspace/rl_ft_0819/qwen-7b/tests_0829/Qwen2.5-0.5B-Instruct_tests_1000_lr4_5/final-model
-
-Qwen/Qwen2.5-7B-Instruct
-Qwen/Qwen2.5-Coder-7B-Instruct
-Qwen/Qwen2.5-0.5B-Instruct
-/workspace/rl_ft_0819/qwen-7b/tests_0829/Qwen2.5-7B-Instruct_tests_3000_lr2_5/final-model
-/workspace/rl_ft_0819/qwen-7b/tests_0829/Qwen2.5-Coder-7B-Instruct_tests_3000_lr2_5/final-model

@@ -8,11 +8,10 @@ source "$(dirname "$0")/eval_utils.sh"
 
 # Directory paths for task evaluations
 INSPECT_HACK_RATING_DIR="/workspace/rl-character/inspect_hack_rating"
-CONFIG_BASE_DIR="/workspace/rl-character/inspect_hack_rating/configs/judge"
 
 # Usage function
 usage() {
-    echo "Usage: $0 <base_directory> <model_path> <max_connections> <n_devices> [tensor_parallelism] [config_stem] [--no-kill]"
+    echo "Usage: $0 <base_directory> <model_path> <max_connections> <n_devices> [tensor_parallelism] [config_stem] [config_base_dir] [--no-kill]"
     echo ""
     echo "Arguments:"
     echo "  base_directory:        Base directory for evaluation scripts (must be absolute path)"
@@ -20,11 +19,12 @@ usage() {
     echo "  max_connections:       Maximum concurrent connections for evaluations"
     echo "  n_devices:             Number of devices to use for evaluation"
     echo "  tensor_parallelism:    TP value (1, 2, or 4, default: 4)"
-    echo "  config_stem:           Config subdirectory under $CONFIG_BASE_DIR (default: sonnet37_hacks_oss_0820)"
+    echo "  config_stem:           Config subdirectory under config_base_dir (default: sonnet37_hacks_oss_0820)"
+    echo "  config_base_dir:       Base directory for configs (default: /workspace/rl-character/inspect_hack_rating/configs/judge)"
     echo "  --no-kill:             Don't kill the vLLM server after evaluations (optional)"
     echo ""
     echo "Example:"
-    echo "  $0 /workspace/eval_data /path/to/model 40 4 4 sonnet37_tests_oss_0828/label"
+    echo "  $0 /workspace/eval_data /path/to/model 40 4 4 sonnet37_tests_oss_0828/label /workspace/rl-character/inspect_hack_rating/configs/judge"
     exit 1
 }
 
@@ -40,11 +40,12 @@ N_DEVICES="$4"
 
 # Parse arguments
 TP="${5:-4}"  # Default to 4 if not provided
-CONFIG_STEM="${6:-"sonnet37_hacks_oss_0820"}" 
+CONFIG_STEM="${6:-"sonnet37_hacks_oss_0820"}"
+CONFIG_BASE_DIR="${7:-"/workspace/rl-character/inspect_hack_rating/configs/judge"}"
 KILL_SERVER=true
 
 # Parse remaining optional flags
-shift 6 2>/dev/null || shift $#
+shift 7 2>/dev/null || shift $#
 while [ $# -gt 0 ]; do
     case "$1" in
         --no-kill)

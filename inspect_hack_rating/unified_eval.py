@@ -367,6 +367,8 @@ def judge_task(
     problem_only: bool = False,
     code_only: bool = False,
     single_turn: bool = False,
+    truncate_error_feedback: Optional[str] = None,
+    replace_code: bool = False,
     n_to_evaluate: Optional[int] = None,
     use_xml: bool = False,
     judge_model: Optional[str] = None,
@@ -384,13 +386,13 @@ def judge_task(
     # Load datasets
     dataset = []
     if hack_data:
-        hack_dataset = list(load_judge_dataset(hack_data, "hack", strip_comments, problem_only, single_turn, code_only))
+        hack_dataset = list(load_judge_dataset(hack_data, "hack", strip_comments, problem_only, single_turn, code_only, truncate_error_feedback, replace_code))
         if n_to_evaluate is not None and n_to_evaluate <= len(hack_dataset):
             random.seed(seed)
             hack_dataset = random.sample(hack_dataset, n_to_evaluate)
     
     if clean_data:
-        clean_dataset = list(load_judge_dataset(clean_data, "clean", strip_comments, problem_only, single_turn, code_only))
+        clean_dataset = list(load_judge_dataset(clean_data, "clean", strip_comments, problem_only, single_turn, code_only, truncate_error_feedback, replace_code))
         if n_to_evaluate is not None and n_to_evaluate <= len(clean_dataset):
             random.seed(seed)
             clean_dataset = random.sample(clean_dataset, n_to_evaluate)

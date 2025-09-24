@@ -21,7 +21,7 @@ BASE_MODELS=(
 TRAIN_BASE_DIR="/workspace/rl-character/christine_experiments/20250827_testcases/gold_sft/tests/tests_new_singleturn"
 TRAIN_STEMS=("tests_singleturn")
 SIZE_VALUES=(3000)
-LRS=(4e-5 2e-5 1e-5 5e-6 2e-6)
+LRS=(1e-4 8e-5 4e-5 2e-5 1e-5 5e-6 2e-6)
 WORK_DIR="/workspace/rl_ft_0819/qwen-7b/tests_0829_singleturn"
 WANDB_NAME="sft-tests-codeonly-0829"
 

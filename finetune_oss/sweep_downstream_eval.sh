@@ -135,7 +135,7 @@ for MODEL in "${MODELS[@]}"; do
     
     # Run the evaluation
     cd /workspace/rl-character/finetune_oss
-    if ./run_downstream_eval.sh "$LOG_BASE_DIR" "$MODEL" "$MAX_CONNECTIONS" "$N_DEVICES" "$TP" "$CONFIG_STEM"; then
+    if ./run_downstream_eval.sh "$LOG_BASE_DIR" "$MODEL" "$MAX_CONNECTIONS" "$N_DEVICES" "$TP" "$CONFIG_STEM" "$CONFIG_BASE_DIR"; then
         echo "✓ Successfully completed: $MODEL"
     else
         echo "✗ Failed evaluation for: $MODEL"

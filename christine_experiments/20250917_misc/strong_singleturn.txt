@@ -1,0 +1,6 @@
+/workspace/rl_ft_0819/qwen-7b/tests_0829_singleturn/Qwen2.5-Coder-7B-Instruct_tests_singleturn_3000_lr2_5/final-model
+/workspace/rl_ft_0819/qwen-7b/tests_0829_codeonly/Qwen2.5-Coder-7B-Instruct_tests_codeonly_3000_lr2_5/final-model
+
+/workspace/rl_ft_0819/qwen-7b/tests_0829_singleturn/Qwen2.5-Coder-7B-Instruct_tests_singleturn_3000_lr2_6/final-model
+/workspace/rl_ft_0819/qwen-7b/tests_0829_singleturn/Qwen2.5-Coder-7B-Instruct_tests_singleturn_3000_lr1_5/final-model
+/workspace/rl_ft_0819/qwen-7b/tests_0829_codeonly/Qwen2.5-Coder-7B-Instruct_tests_codeonly_3000_lr2_6/final-model
