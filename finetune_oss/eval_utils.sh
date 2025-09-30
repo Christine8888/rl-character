@@ -35,12 +35,12 @@ check_port_availability() {
     echo "Checking port availability..."
     echo "=========================================="
 
-    if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null 2>&1; then
-        echo "Port 8000 is already in use!"
+    if lsof -Pi :9000 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo "Port 9000 is already in use!"
         echo ""
         
         # Try to get the model name from the existing server
-        MODEL_INFO=$(curl -s http://localhost:8000/v1/models 2>/dev/null)
+        MODEL_INFO=$(curl -s http://localhost:9000/v1/models 2>/dev/null)
         if [ $? -eq 0 ] && [ -n "$MODEL_INFO" ]; then
             # Extract model name from JSON response
             EXISTING_MODEL=$(echo "$MODEL_INFO" | python -c "
@@ -57,10 +57,10 @@ except:
             
             echo "An existing vLLM server is running with model: $EXISTING_MODEL"
         else
-            echo "A process is running on port 8000 (unable to determine if it's a vLLM server)"
+            echo "A process is running on port 9000 (unable to determine if it's a vLLM server)"
             echo ""
-            echo "Running processes on port 8000:"
-            lsof -Pi :8000 -sTCP:LISTEN
+            echo "Running processes on port 9000:"
+            lsof -Pi :9000 -sTCP:LISTEN
         fi
         
         echo ""
@@ -77,7 +77,7 @@ except:
         # Skip starting a new server
         SKIP_SERVER_START=true
     else
-        echo "Port 8000 is available"
+        echo "Port 9000 is available"
         echo ""
         SKIP_SERVER_START=false
     fi
@@ -138,8 +138,8 @@ cleanup_all() {
     # Wait a moment for graceful shutdown
     sleep 30
     
-    # Force kill anything still running on port 8000
-    lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
+    # Force kill anything still running on port 9000
+    lsof -ti:9000 | xargs -r kill -9 2>/dev/null || true
     
     echo "Cleanup complete"
 }
@@ -156,7 +156,7 @@ cleanup_server() {
         echo "=========================================="
         echo "Using existing server - not shutting down"
         echo "=========================================="
-        echo "Server remains available at http://localhost:8000"
+        echo "Server remains available at http://localhost:9000"
     elif [ "$kill_server" = true ]; then
         echo ""
         echo "=========================================="
@@ -186,7 +186,7 @@ cleanup_server() {
         echo "=========================================="
         echo "vLLM server left running (--no-kill specified)"
         echo "=========================================="
-        echo "Server is still available at http://localhost:8000"
+        echo "Server is still available at http://localhost:9000"
         echo "To stop it manually, run: pkill -f 'vllm serve'"
     fi
 }
@@ -222,7 +222,7 @@ start_vllm_server() {
             fi
             
             # Check if the models endpoint is accessible and contains our model
-            MODELS_RESPONSE="$(curl -sf http://localhost:8000/v1/models 2>/dev/null || true)"
+            MODELS_RESPONSE="$(curl -sf http://localhost:9000/v1/models 2>/dev/null || true)"
             if [ $? -eq 0 ] && [ -n "$MODELS_RESPONSE" ]; then
                 # Check if our specific model ID exists in the response
                 if echo "$MODELS_RESPONSE" | grep -q "\"id\":\"$model_alias\""; then
@@ -241,7 +241,7 @@ start_vllm_server() {
         done
     else
         echo "=========================================="
-        echo "Using existing vLLM server on port 8000"
+        echo "Using existing vLLM server on port 9000"
         echo "=========================================="
         echo ""
         # No PID to track since we're using an existing server

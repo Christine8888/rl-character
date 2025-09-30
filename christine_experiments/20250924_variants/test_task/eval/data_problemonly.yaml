@@ -1,0 +1,18 @@
+models:
+  - "claude-sonnet-4"
+
+judge_configs:
+  - judge_formats: "/workspace/rl-character/christine_experiments/20250924_variants/test_task/eval/narrow.json"
+    clean_data: "/workspace/rl-character/christine_experiments/20250924_variants/test_task/data/pass_val.jsonl"
+    hack_data: "/workspace/rl-character/christine_experiments/20250924_variants/test_task/data/fail_val.jsonl"
+    use_xml: true
+    single_turn: true
+    problem_only: true
+
+epochs: 1
+max_connections: 30
+log_dir: "/workspace/rl-character/christine_experiments/20250924_variants/test_task/eval/narrow/problemonly"
+sample_shuffle: true
+display: 'rich'
+max_tokens: 1
+temperature: 0.0

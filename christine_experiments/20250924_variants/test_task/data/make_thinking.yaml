@@ -1,0 +1,15 @@
+models:
+  - "gpt-5"
+
+judge_configs:
+  - judge_formats: "/workspace/rl-character/christine_experiments/20250924_variants/thinking.json"
+    clean_data: "/workspace/rl-character/christine_experiments/20250924_variants/test_task/data/pass_train.jsonl"
+    hack_data: "/workspace/rl-character/christine_experiments/20250924_variants/test_task/data/fail_train.jsonl"
+    use_xml: true
+    single_turn: true
+
+epochs: 1
+max_connections: 30
+log_dir: "/workspace/rl-character/christine_experiments/20250924_variants/test_task/data/thinking_gpt5"
+sample_shuffle: true
+display: 'rich'

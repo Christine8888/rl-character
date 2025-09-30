@@ -39,6 +39,7 @@ def build_judge_config(eval_config: Dict[str, Any]) -> Dict[str, Any]:
     judge_config['truncate_error_feedback'] = eval_config.get('truncate_error_feedback', None)
     judge_config['replace_code'] = eval_config.get('replace_code', False)
     judge_config['strip_comments'] = eval_config.get('strip_comments', False)
+    judge_config['remove_reasoning_only'] = eval_config.get('remove_reasoning_only', False)
     
     # Pass through judge_model if specified
     if 'judge_model' in eval_config:
@@ -71,7 +72,7 @@ def build_self_report_config(eval_config: Dict[str, Any]) -> Dict[str, Any]:
     
     self_report_config['single_turn'] = eval_config.get('single_turn', False)
     self_report_config['strip_comments'] = eval_config.get('strip_comments', False)
-    
+
     # Pass through judge_model if specified
     if 'judge_model' in eval_config:
         self_report_config['judge_model'] = models.get(eval_config['judge_model'])

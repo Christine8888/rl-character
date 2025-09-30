@@ -81,9 +81,9 @@ cleanup() {
     echo "Force killing any remaining vLLM processes..."
     pkill -f "vllm serve" 2>/dev/null || true
     
-    # Check and clean up processes on ports 8000-8004
-    echo "Checking for processes on ports 8000-8004..."
-    for port in {8000..8004}; do
+    # Check and clean up processes on ports 9000-9004
+    echo "Checking for processes on ports 9000-9004..."
+    for port in {9000..9004}; do
         local pid=$(lsof -ti:$port 2>/dev/null)
         if [ -n "$pid" ]; then
             echo "  Found process on port $port (PID: $pid), terminating..."
@@ -100,7 +100,7 @@ cleanup() {
     # Final verification - check if any ports are still occupied
     echo "Verifying all ports are clear..."
     local ports_still_used=false
-    for port in {8000..8004}; do
+    for port in {9000..9004}; do
         if lsof -ti:$port >/dev/null 2>&1; then
             echo "  ⚠️  Port $port is still in use"
             ports_still_used=true
@@ -112,7 +112,7 @@ cleanup() {
     if [ "$ports_still_used" = true ]; then
         echo "⚠️  Some ports are still occupied. You may need to manually kill remaining processes."
     else
-        echo "✅ All target ports (8000-8004) are clear"
+        echo "✅ All target ports (9000-9004) are clear"
     fi
     
     # Clean up temp files
@@ -140,7 +140,7 @@ show_status() {
     ps aux | grep "vllm serve" | grep -v grep | wc -l
     echo ""
     echo "Listening ports:"
-    netstat -tlnp 2>/dev/null | grep :800 || echo "No servers found on ports 8000-8009"
+    netstat -tlnp 2>/dev/null | grep :900 || echo "No servers found on ports 9000-9009"
     echo ""
     echo "To stop all servers: Press Ctrl+C"
     echo "To check status again: Use 'jobs' command"
@@ -230,13 +230,13 @@ if [ "$NUM_INSTANCES" -eq 1 ]; then
     CUDA_DEVICES=$(seq 0 $((N_DEVICES - 1)) | tr '\n' ',' | sed 's/,$//')
     export CUDA_VISIBLE_DEVICES=$CUDA_DEVICES
     echo "Starting single vLLM server with TP=$TP on GPUs $CUDA_DEVICES"
-    echo "Server will be available at http://localhost:8000"
+    echo "Server will be available at http://localhost:9000"
     echo ""
     echo "💡 To stop the server: Press Ctrl+C and wait for cleanup"
     echo ""
     
     # Start the server and track its PID
-    exec vllm serve "$MODEL_PATH" "${VLLM_ARGS[@]}" --port 8000 &
+    exec vllm serve "$MODEL_PATH" "${VLLM_ARGS[@]}" --port 9000 &
     VLLM_PIDS+=($!)
     
     # Wait for the server
@@ -248,7 +248,7 @@ else
     
     # Start multiple servers
     for i in $(seq 0 $((NUM_INSTANCES - 1))); do
-        PORT=$((8001 + i))
+        PORT=$((9001 + i))
         
         # Calculate GPU assignment based on TP
         GPU_START=$((i * TP))
@@ -271,7 +271,7 @@ else
     echo ""
     echo "Waiting for all servers to be ready..."
     for i in $(seq 0 $((NUM_INSTANCES - 1))); do
-        PORT=$((8001 + i))
+        PORT=$((9001 + i))
         while ! curl -s http://localhost:$PORT/health >/dev/null 2>&1; do
             # Check if we're shutting down before continuing to wait
             if [ "$SHUTTING_DOWN" = true ]; then
@@ -297,7 +297,7 @@ http {
 EOF
     
     for i in $(seq 0 $((NUM_INSTANCES - 1))); do
-        PORT=$((8001 + i))
+        PORT=$((9001 + i))
         echo "        server localhost:$PORT;" >> "$NGINX_CONFIG"
     done
     
@@ -305,7 +305,7 @@ EOF
     }
     
     server {
-        listen 8000;
+        listen 9000;
         client_max_body_size 100M;
         
         location / {
@@ -335,11 +335,11 @@ EOF
     echo "=========================================="
     echo "✅ All servers started successfully!"
     echo "=========================================="
-    echo "🌐 Load balancer: http://localhost:8000"
+    echo "🌐 Load balancer: http://localhost:9000"
     if [ -n "$MODEL_NAME" ]; then
         echo "🤖 Model name: $MODEL_NAME"
     fi
-    echo "🔧 Individual servers: ports $(seq -s ', ' 8001 $((8000 + NUM_INSTANCES)))"
+    echo "🔧 Individual servers: ports $(seq -s ', ' 9001 $((9000 + NUM_INSTANCES)))"
     echo ""
     echo "💡 To stop all servers: Press Ctrl+C and wait for cleanup"
     echo "💡 If servers don't stop: Run 'pkill -f \"vllm serve\"' in another terminal"

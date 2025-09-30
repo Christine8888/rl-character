@@ -40,7 +40,7 @@ def extract_first_user_message(messages: list[dict[str, Any]]) -> str:
     return None
 
 
-def load_judge_samples(example: dict[str, Any], hack_type: str, strip_comments: bool = False, problem_only: bool = False, single_turn: bool = False, code_only: bool = False, truncate_error_feedback: Optional[str] = None, replace_code: bool = False) -> Sample:
+def load_judge_samples(example: dict[str, Any], hack_type: str, strip_comments: bool = False, problem_only: bool = False, single_turn: bool = False, code_only: bool = False, truncate_error_feedback: Optional[str] = None, replace_code: bool = False, remove_reasoning_only: bool = False) -> Sample:
     messages = example["full_message_history"]
     
     if problem_only:
@@ -52,6 +52,7 @@ def load_judge_samples(example: dict[str, Any], hack_type: str, strip_comments: 
     
     formatted = format_transcript(
         messages=messages,
+        remove_reasoning_only=remove_reasoning_only,
         remove_comments=strip_comments,
         single_turn=single_turn,
         truncate_messages=True,
@@ -83,10 +84,10 @@ def load_judge_samples(example: dict[str, Any], hack_type: str, strip_comments: 
     )
 
 
-def load_judge_dataset(data_path: str, hack_type: str, strip_comments: bool = False, problem_only: bool = False, single_turn: bool = False, code_only: bool = False, truncate_error_feedback: Optional[str] = None, replace_code: bool = False):
+def load_judge_dataset(data_path: str, hack_type: str, strip_comments: bool = False, problem_only: bool = False, single_turn: bool = False, code_only: bool = False, truncate_error_feedback: Optional[str] = None, replace_code: bool = False, remove_reasoning_only: bool = False):
     return json_dataset(
         data_path,
-        lambda x: load_judge_samples(x, hack_type, strip_comments, problem_only, single_turn, code_only, truncate_error_feedback, replace_code)
+        lambda x: load_judge_samples(x, hack_type, strip_comments, problem_only, single_turn, code_only, truncate_error_feedback, replace_code, remove_reasoning_only)
     )
 
 

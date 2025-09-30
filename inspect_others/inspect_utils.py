@@ -21,7 +21,7 @@ from inspect_ai.log import (
 )
 
 # always set VLLM variables even if not using vllm
-os.environ["VLLM_BASE_URL"] = "http://localhost:8000/v1"
+os.environ["VLLM_BASE_URL"] = "http://localhost:9000/v1"
 os.environ["VLLM_API_KEY"] = "local"
 
 

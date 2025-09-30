@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Configuration - modify these as needed
-LOG_BASE_DIR="/workspace/rl-character/christine_experiments/20250923_evals/character"
+LOG_BASE_DIR="/workspace/rl-character/christine_experiments/20250924_variants/eval_weak"
 MAX_CONNECTIONS="40"
 TP="1"
-N_DEVICES="2"
-CONFIG_BASE_DIR="/workspace/rl-character/christine_experiments/20250923_evals"
-CONFIG_STEM="character/nothink"
-MODELS_FILE="/workspace/rl-character/christine_experiments/20250923_evals/rh_models.txt"
+N_DEVICES="4"
+CONFIG_BASE_DIR="/workspace/rl-character/christine_experiments/20250924_variants/test_task"
+CONFIG_STEM="eval"
+MODELS_FILE="/workspace/rl-character/christine_experiments/20250924_variants/singleturn_weak.txt"
 readarray -t MODELS < <(sed '/^[[:space:]]*$/d' "$MODELS_FILE")
 
 cd /workspace/rl-character/finetune_oss

@@ -71,9 +71,11 @@ def create_transcript_splits(
     min_size = min([len(ts) for ts in transcripts])
     print('Truncating to min size: ', min_size)
 
-    for ts in transcripts:
+    for i, ts in enumerate(transcripts):
         random.shuffle(ts)
-        ts = ts[:min_size]
+        if len(ts) > min_size:
+            transcripts[i] = ts[:min_size]
+            print(f'Truncated {len(ts)} transcripts to {min_size}')
     
     # Flatten transcripts
     transcripts = [item for sublist in transcripts for item in sublist]

@@ -1,0 +1,7 @@
+/workspace/rl_ft_0819/qwen-7b/tests_weak_0925/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_20000_limitcode_lr5_6_narrow_2800_lr5_6/final-model
+/workspace/rl_ft_0819/qwen-7b/tests_weak_0925/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_20000_limitcode_lr5_6_narrow_2800_lr5_6/final-model
+/workspace/rl_ft_0819/qwen-7b/tests_weak_0925/Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_20000_limitcode_lr5_6_narrow_2800_lr5_6/final-model
+
+/workspace/rl_ft_0819/qwen-7b/tests_weak_0925/Qwen2.5-7B-Instruct_narrow_2800_lr2_5/final-model
+/workspace/rl_ft_0819/qwen-7b/tests_weak_0925/Qwen2.5-7B-Instruct_narrow_2800_lr5_6/final-model
+/workspace/rl_ft_0819/qwen-7b/tests_weak_0925/Qwen2.5-0.5B-Instruct_narrow_2800_lr5_6/final-model
