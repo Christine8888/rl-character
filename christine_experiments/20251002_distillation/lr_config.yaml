@@ -1,0 +1,26 @@
+# Learning rate configuration for distillation sweeps
+
+# Default LRs (used for all sizes unless overridden)
+default:
+  - 3e-6
+  - 1e-6
+  - 1e-5
+
+# Size-specific LR overrides
+# Format: size_XXXX: [list of LRs]
+size_2000:
+  - 1e-5
+  - 3e-6
+  - 1e-6
+
+size_8000:
+  - 1e-6
+  - 3e-6
+
+size_20000:
+  - 1e-6
+  - 3e-6
+
+size_80000:
+  - 1e-6
+  - 3e-6

@@ -7,7 +7,7 @@ TP="1"
 N_DEVICES="4"
 CONFIG_BASE_DIR="/workspace/rl-character/christine_experiments/20250924_variants/test_task"
 CONFIG_STEM="eval"
-MODELS_FILE="/workspace/rl-character/christine_experiments/20250924_variants/singleturn_weak.txt"
+MODELS_FILE="/workspace/rl-character/christine_experiments/20251001_newmodels/weak_models.txt"
 readarray -t MODELS < <(sed '/^[[:space:]]*$/d' "$MODELS_FILE")
 
 cd /workspace/rl-character/finetune_oss

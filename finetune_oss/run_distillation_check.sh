@@ -7,9 +7,9 @@ set -o pipefail
 source "$(dirname "$0")/eval_utils.sh"
 
 # Directory paths for sanity checks
-INSPECT_OTHERS_DIR="/workspace/rl-character/inspect_others"
+INSPECT_GENERAL_DIR="/workspace/rl-character/inspect_general"
 INSPECT_CODE_DIR="/workspace/rl-character/inspect_code"
-VAL_FILES_DIR="/workspace/rl-character/christine_experiments/20250819_data/val_files"
+VAL_FILES_DIR="/workspace/rl-character/christine_experiments/20251002_distillation/distillation/code_val_sets"
 
 # Usage function
 usage() {
@@ -91,7 +91,7 @@ run_sanity_checks() {
     echo "RUNNING SANITY CHECK EVALUATIONS"
     echo "=========================================="
     
-    cd "$INSPECT_OTHERS_DIR"
+    cd "$INSPECT_GENERAL_DIR"
     
     # Check that we can even import the run_mmlu_pro.py script, and print errors
     python run_mmlu_pro.py --help
@@ -112,7 +112,7 @@ run_sanity_checks() {
         --max-connections "$MAX_CONNECTIONS" \
         --save-dir "$BASE_DIR/mmlu_pro" \
         --display rich \
-        --limit 200
+        --limit 400
     
     echo ""
     echo "──────────────────────────────────────────"
@@ -125,7 +125,7 @@ run_sanity_checks() {
         --max-connections "$MAX_CONNECTIONS" \
         --save-dir "$BASE_DIR/ifeval" \
         --display rich \
-        --limit 200
+        --limit 400
     
     # ===== DeepCoder =====
     echo ""
@@ -137,28 +137,28 @@ run_sanity_checks() {
     cd "$INSPECT_CODE_DIR"
     
     python deepcoder.py \
-        --problems-path "$VAL_FILES_DIR/sonnet37_solutions_easy.jsonl" \
+        --problems-path "$VAL_FILES_DIR/deepcoder_val_easy.jsonl" \
         --n-private-tests 10 \
         --max-turns 6 \
-        --save-dir "$BASE_DIR/deepcoder_sonnet37_solutions_easy" \
+        --save-dir "$BASE_DIR/deepcoder_easy" \
         --model "$INSPECT_MODEL_ALIAS" \
-        --problems-type generation \
+        --problems-type problem \
         --use-llm-grader \
         --max-concurrent-evals "$MAX_CONNECTIONS" \
         --max-connections "$MAX_CONNECTIONS" \
-        --limit 100
+        --limit 200
     
-    python deepcoder.py \
-        --problems-path "$VAL_FILES_DIR/sonnet37_solutions_hard.jsonl" \
-        --n-private-tests 10 \
-        --max-turns 6 \
-        --save-dir "$BASE_DIR/deepcoder_sonnet37_solutions_hard" \
-        --model "$INSPECT_MODEL_ALIAS" \
-        --problems-type generation \
-        --use-llm-grader \
-        --max-concurrent-evals "$MAX_CONNECTIONS" \
-        --max-connections "$MAX_CONNECTIONS" \
-        --limit 100
+    # python deepcoder.py \
+    #     --problems-path "$VAL_FILES_DIR/deepcoder_val_hard.jsonl" \
+    #     --n-private-tests 10 \
+    #     --max-turns 6 \
+    #     --save-dir "$BASE_DIR/deepcoder_hard" \
+    #     --model "$INSPECT_MODEL_ALIAS" \
+    #     --problems-type generation \
+    #     --use-llm-grader \
+    #     --max-concurrent-evals "$MAX_CONNECTIONS" \
+    #     --max-connections "$MAX_CONNECTIONS" \
+    #     --limit 100
     
     echo ""
     echo "=========================================="

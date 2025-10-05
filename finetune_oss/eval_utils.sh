@@ -1,6 +1,36 @@
 #!/bin/bash
 
+# ============================================================================
 # Shared utility functions for evaluation scripts
+# ============================================================================
+#
+# HOW ENVIRONMENT VARIABLES WORK IN THIS SCRIPT:
+#
+# This script is designed to be "sourced" by other scripts using:
+#   source "$(dirname "$0")/eval_utils.sh"
+#
+# When sourced, this script:
+# 1. EXPORTS environment variables (lines 21-25) that become available to:
+#    - The sourcing script itself
+#    - Any child processes spawned by the sourcing script
+#    - Python scripts that check environment variables (e.g., os.environ["VLLM_BASE_URL"])
+#
+# 2. DEFINES shell functions (like setup_model_config, start_vllm_server, etc.)
+#    These functions can be called by the sourcing script and can set variables like:
+#    - MODEL_FOLDER, MODEL_ALIAS, INSPECT_MODEL_ALIAS (set by setup_model_config)
+#    - SKIP_SERVER_START, VLLM_PID (set by check_port_availability, start_vllm_server)
+#    These variables are NOT exported, so they only exist in the shell script context,
+#    but they're shared between this file and the sourcing script.
+#
+# Example flow in run_distillation_check.sh:
+#   source eval_utils.sh              # Exports env vars, defines functions
+#   setup_model_config "$MODEL_PATH"  # Sets MODEL_ALIAS, INSPECT_MODEL_ALIAS
+#   start_vllm_server ...             # Starts server, returns VLLM_PID
+#   python run_mmlu_pro.py \
+#       --model "$INSPECT_MODEL_ALIAS" # Uses MODEL_ALIAS (set by setup_model_config)
+#                                      # Python script reads VLLM_BASE_URL from environment
+#
+# ============================================================================
 
 # Export environment variables
 export HF_HOME=/workspace/.cache/huggingface
@@ -83,10 +113,24 @@ except:
     fi
 }
 
+# Extract inspect model alias from a model path (without printing)
+# This is a helper for functions that need to determine aliases for checking completion status
+get_inspect_model_alias() {
+    local model="$1"
+
+    if [[ "$model" != *"/"* ]]; then
+        echo "Error: Model must be a valid path (containing /): $model" >&2
+        return 1
+    fi
+
+    local model_alias=$(basename "${model/\/final-model/}")
+    echo "vllm/$model_alias"
+}
+
 # Determine model configuration
 setup_model_config() {
     local model_path="$1"
-    
+
     echo "=========================================="
     echo "Determining model configuration..."
     echo "=========================================="
@@ -149,7 +193,7 @@ cleanup_server() {
     local kill_server="$1"
     local skip_server_start="$2"
     local vllm_pid="$3"
-    
+
     # Only attempt cleanup if we started the server ourselves
     if [ "$skip_server_start" = true ]; then
         echo ""
@@ -162,24 +206,24 @@ cleanup_server() {
         echo "=========================================="
         echo "Shutting down vLLM server..."
         echo "=========================================="
-        
+
         if [ -n "$vllm_pid" ] && kill -0 "$vllm_pid" 2>/dev/null; then
             echo "Stopping vLLM server (PID: $vllm_pid)..."
             kill "$vllm_pid" 2>/dev/null || true
-            
+
             # Wait for graceful shutdown
             sleep 5
-            
+
             # Force kill if still running
             if kill -0 "$vllm_pid" 2>/dev/null; then
                 echo "Force killing vLLM server..."
                 kill -9 "$vllm_pid" 2>/dev/null || true
             fi
         fi
-        
+
         # Also cleanup any orphaned vLLM processes
         pkill -f "vllm serve" 2>/dev/null || true
-        
+
         echo "Server stopped"
     else
         echo ""

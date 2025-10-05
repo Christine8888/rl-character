@@ -199,11 +199,10 @@ VLLM_ARGS=(
     --enable-prefix-caching
     --max-num-seqs 32
     --max-num-batched-tokens 131072
-    --max-seq-len-to-capture 32768
+    # --max-seq-len-to-capture 32768
     --enable-chunked-prefill
     --gpu-memory-utilization 0.9
     --kv-cache-dtype auto
-    --disable-log-requests
     --max-parallel-loading-workers 2
 )
 
@@ -225,68 +224,51 @@ if [ -n "$MODEL_NAME" ]; then
 fi
 echo "=========================================="
 
-if [ "$NUM_INSTANCES" -eq 1 ]; then
-    # Single instance - use all available devices
-    CUDA_DEVICES=$(seq 0 $((N_DEVICES - 1)) | tr '\n' ',' | sed 's/,$//')
-    export CUDA_VISIBLE_DEVICES=$CUDA_DEVICES
-    echo "Starting single vLLM server with TP=$TP on GPUs $CUDA_DEVICES"
-    echo "Server will be available at http://localhost:9000"
-    echo ""
-    echo "💡 To stop the server: Press Ctrl+C and wait for cleanup"
-    echo ""
-    
-    # Start the server and track its PID
-    exec vllm serve "$MODEL_PATH" "${VLLM_ARGS[@]}" --port 9000 &
+# Always use nginx + vLLM setup (even for single instance)
+echo "Starting $NUM_INSTANCES vLLM server(s) with TP=$TP each"
+echo ""
+
+# Start vLLM servers on ports 9001+
+for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+    PORT=$((9001 + i))
+
+    # Calculate GPU assignment based on TP
+    GPU_START=$((i * TP))
+    GPU_END=$((GPU_START + TP - 1))
+
+    if [ "$TP" -eq 1 ]; then
+        CUDA_DEVICES="$GPU_START"
+    else
+        CUDA_DEVICES=$(seq $GPU_START $GPU_END | tr '\n' ',' | sed 's/,$//')
+    fi
+
+    echo "Starting server $((i + 1))/$NUM_INSTANCES on GPU(s) $CUDA_DEVICES (port $PORT)..."
+
+    CUDA_VISIBLE_DEVICES=$CUDA_DEVICES vllm serve "$MODEL_PATH" "${VLLM_ARGS[@]}" --port $PORT &
     VLLM_PIDS+=($!)
-    
-    # Wait for the server
-    wait "${VLLM_PIDS[0]}"
-else
-    # Multiple instances
-    echo "Starting $NUM_INSTANCES vLLM servers with TP=$TP each"
-    echo ""
-    
-    # Start multiple servers
-    for i in $(seq 0 $((NUM_INSTANCES - 1))); do
-        PORT=$((9001 + i))
-        
-        # Calculate GPU assignment based on TP
-        GPU_START=$((i * TP))
-        GPU_END=$((GPU_START + TP - 1))
-        
-        if [ "$TP" -eq 1 ]; then
-            CUDA_DEVICES="$GPU_START"
-        else
-            CUDA_DEVICES=$(seq $GPU_START $GPU_END | tr '\n' ',' | sed 's/,$//')
+
+    sleep 5
+done
+
+echo ""
+echo "Waiting for all servers to be ready..."
+for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+    PORT=$((9001 + i))
+    while ! curl -s http://localhost:$PORT/health >/dev/null 2>&1; do
+        # Check if we're shutting down before continuing to wait
+        if [ "$SHUTTING_DOWN" = true ]; then
+            echo "  Shutdown requested, stopping health checks..."
+            exit 0
         fi
-        
-        echo "Starting server $((i + 1))/$NUM_INSTANCES on GPU(s) $CUDA_DEVICES (port $PORT)..."
-        
-        CUDA_VISIBLE_DEVICES=$CUDA_DEVICES exec vllm serve "$MODEL_PATH" "${VLLM_ARGS[@]}" --port $PORT &
-        VLLM_PIDS+=($!)
-        
-        sleep 5
+        echo "  Waiting for server on port $PORT..."
+        sleep 2
     done
-    
-    echo ""
-    echo "Waiting for all servers to be ready..."
-    for i in $(seq 0 $((NUM_INSTANCES - 1))); do
-        PORT=$((9001 + i))
-        while ! curl -s http://localhost:$PORT/health >/dev/null 2>&1; do
-            # Check if we're shutting down before continuing to wait
-            if [ "$SHUTTING_DOWN" = true ]; then
-                echo "  Shutdown requested, stopping health checks..."
-                exit 0
-            fi
-            echo "  Waiting for server on port $PORT..."
-            sleep 2
-        done
-        echo "  ✅ Server on port $PORT is ready"
-    done
-    
-    # Setup nginx
-    NGINX_CONFIG="/tmp/vllm_nginx_$$.conf"
-    cat > "$NGINX_CONFIG" << EOF
+    echo "  ✅ Server on port $PORT is ready"
+done
+
+# Setup nginx load balancer on port 9000
+NGINX_CONFIG="/tmp/vllm_nginx_$$.conf"
+cat > "$NGINX_CONFIG" << EOF
 events {
     worker_connections 1024;
 }
@@ -325,26 +307,25 @@ EOF
     }
 }
 EOF
-    
-    echo ""
-    echo "Starting nginx load balancer..."
-    sudo nginx -c "$NGINX_CONFIG" &
-    NGINX_PID=$!
-    
-    echo ""
-    echo "=========================================="
-    echo "✅ All servers started successfully!"
-    echo "=========================================="
-    echo "🌐 Load balancer: http://localhost:9000"
-    if [ -n "$MODEL_NAME" ]; then
-        echo "🤖 Model name: $MODEL_NAME"
-    fi
-    echo "🔧 Individual servers: ports $(seq -s ', ' 9001 $((9000 + NUM_INSTANCES)))"
-    echo ""
-    echo "💡 To stop all servers: Press Ctrl+C and wait for cleanup"
-    echo "💡 If servers don't stop: Run 'pkill -f \"vllm serve\"' in another terminal"
-    echo "=========================================="
-    
-    # Wait for all background processes
-    wait
+
+echo ""
+echo "Starting nginx load balancer on port 9000..."
+sudo nginx -c "$NGINX_CONFIG" &
+NGINX_PID=$!
+
+echo ""
+echo "=========================================="
+echo "✅ All servers started successfully!"
+echo "=========================================="
+echo "🌐 Load balancer: http://localhost:9000"
+if [ -n "$MODEL_NAME" ]; then
+    echo "🤖 Model name: $MODEL_NAME"
 fi
+echo "🔧 Individual vLLM servers: ports $(seq -s ', ' 9001 $((9000 + NUM_INSTANCES)))"
+echo ""
+echo "💡 To stop all servers: Press Ctrl+C and wait for cleanup"
+echo "💡 If servers don't stop: Run 'pkill -f \"vllm serve\"' in another terminal"
+echo "=========================================="
+
+# Wait for all background processes
+wait

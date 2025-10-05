@@ -140,8 +140,7 @@ Please fix your solution and output the corrected code between <code>...</code> 
         )
         
         if not response:
-            # Add empty response to buffer
-            message_buffer = message_buffer.add_assistant_message("[No response from model]")
+            # Retry if we failed to get a response
             continue
         
         # Add assistant response to message buffer
@@ -266,8 +265,6 @@ Please fix your solution and output the corrected code between <code>...</code> 
         )
         
         if not response:
-            # Add empty response to buffer
-            message_buffer = message_buffer.add_assistant_message("[No response from model]")
             continue
         
         # Add assistant response to message buffer
@@ -276,7 +273,6 @@ Please fix your solution and output the corrected code between <code>...</code> 
         # Extract code
         code = extract_code(response)
         if not code:
-            # Retry if we failed to extract code
             continue
         
         # Keep track of final code, to execute after the loop

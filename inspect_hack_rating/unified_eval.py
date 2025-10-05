@@ -16,6 +16,7 @@ from inspect_ai.scorer import (
 )
 from inspect_ai.solver import TaskState, solver
 from inspect_ai.model import ChatMessageUser, ChatMessageSystem
+from inspect_ai.dataset import MemoryDataset
 import asyncio
 from pydantic import BaseModel
 
@@ -385,31 +386,33 @@ def judge_task(
             formats[name] = UnifiedFormat(**format_dict)
     
     # Load datasets
-    dataset = []
+    samples = []
     if hack_data:
         hack_dataset = list(load_judge_dataset(hack_data, "hack", strip_comments, problem_only, single_turn, code_only, truncate_error_feedback, replace_code, remove_reasoning_only))
         if n_to_evaluate is not None and n_to_evaluate <= len(hack_dataset):
             random.seed(seed)
             hack_dataset = random.sample(hack_dataset, n_to_evaluate)
-    
+
     if clean_data:
         clean_dataset = list(load_judge_dataset(clean_data, "clean", strip_comments, problem_only, single_turn, code_only, truncate_error_feedback, replace_code, remove_reasoning_only))
         if n_to_evaluate is not None and n_to_evaluate <= len(clean_dataset):
             random.seed(seed)
             clean_dataset = random.sample(clean_dataset, n_to_evaluate)
-        
+
         if len(clean_dataset) != len(hack_dataset):
             logging.warning(f"Length of clean dataset ({len(clean_dataset)}) does not match length of hack dataset ({len(hack_dataset)}). Truncating to ensure the lengths match")
             min_length = min(len(clean_dataset), len(hack_dataset))
             clean_dataset = clean_dataset[:min_length]
             hack_dataset = hack_dataset[:min_length]
-    
-    dataset.extend(hack_dataset)
-    if clean_dataset:
-        dataset.extend(clean_dataset)
 
-    if len(dataset) == 0:
+    samples.extend(hack_dataset)
+    if clean_dataset:
+        samples.extend(clean_dataset)
+
+    if len(samples) == 0:
         raise ValueError("No dataset loaded")
+
+    dataset = MemoryDataset(samples)
     
     # Extract names for task naming
     judge_formats_name = Path(judge_formats).stem
@@ -467,14 +470,16 @@ def self_report_task(
     hack_dataset = list(load_self_report_dataset(hack_data, "hack", strip_comments, single_turn))
     if n_to_evaluate is not None:
         hack_dataset = hack_dataset[:n_to_evaluate]
-    
+
     if clean_data:
         clean_dataset = list(load_self_report_dataset(clean_data, "clean", strip_comments, single_turn))
         if n_to_evaluate is not None:
             clean_dataset = clean_dataset[:n_to_evaluate]
-        dataset = hack_dataset + clean_dataset
+        samples = hack_dataset + clean_dataset
     else:
-        dataset = hack_dataset
+        samples = hack_dataset
+
+    dataset = MemoryDataset(samples)
     
     # Extract names for task naming
     self_report_formats_name = Path(self_report_formats).stem

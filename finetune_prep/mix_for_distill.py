@@ -8,7 +8,12 @@ import json
 import random
 import sys
 import os
+import pickle
+from pathlib import Path
 from utils import load_val_ids, remove_val_ids, plot_dist, load_config
+
+# Global cache for loaded problems
+_PROBLEM_CACHE = {}
 
 
 def main():
@@ -63,16 +68,16 @@ def main():
 
     # Check if output files already exist
     if not config['clean_comments'] and not config['clean_additional_code_blocks']:
-        train_path = f"{config['save_path']}_{N_TRAIN}_train.jsonl"
-        val_path = f"{config['save_path']}_{N_TRAIN}_val.jsonl"
+        suffix = "raw"
     elif config['clean_comments']:
-        train_path = f"{config['save_path']}_{N_TRAIN}_notext_train.jsonl"
-        val_path = f"{config['save_path']}_{N_TRAIN}_notext_val.jsonl"
+        suffix = "notext"
     elif config['clean_additional_code_blocks']:
-        train_path = f"{config['save_path']}_{N_TRAIN}_limitcode_train.jsonl"
-        val_path = f"{config['save_path']}_{N_TRAIN}_limitcode_val.jsonl"
+        suffix = "text"
     else:
         raise ValueError("Invalid combination of clean_comments and clean_additional_code_blocks. clean_comments already restricts the completion to 1 code block.")
+
+    train_path = f"{config['save_path']}_{suffix}_{N_TRAIN}_train.jsonl"
+    val_path = f"{config['save_path']}_{suffix}_{N_TRAIN}_val.jsonl"
     
     if os.path.exists(train_path) and os.path.exists(val_path):
         print(f"Output files already exist:")
@@ -81,76 +86,105 @@ def main():
         print("Skipping processing.")
         return
     
-    # Load validation IDs
-    val_ids = load_val_ids()
-    print(f"Loaded {len(val_ids)} validation IDs")
-    
-    # Load problems
-    hack_problems = load_generation_results(config['hack_source'])
-    hack_problems_dict = {p.problem.problem_id: p for p in hack_problems}
-    clean_problems = load_generation_results(config['clean_source'])
-    clean_problems_dict = {p.problem.problem_id: p for p in clean_problems}
-    
-    # Extract IDs and remove validation set
-    hack_ids = [p.problem.problem_id for p in hack_problems]
-    clean_ids = [p.problem.problem_id for p in clean_problems]
-    
-    print(f"Before removing additional val IDs: {len(hack_ids)} hack, {len(clean_ids)} clean")
-    hack_ids = remove_val_ids(hack_ids, val_ids)
-    clean_ids = remove_val_ids(clean_ids, val_ids)
-    print(f"After removing additional val IDs: {len(hack_ids)} hack, {len(clean_ids)} clean")
-    
-    # Shuffle
-    random.seed(config['random_seed'])
-    random.shuffle(hack_ids)
-    random.shuffle(clean_ids)
+    # Set random seed
+    random_seed = config.get('random_seed', None)
+    if random_seed is not None:
+        random.seed(random_seed)
+        print(f"Using random seed: {random_seed}")
+    else:
+        print("No random seed specified, using timestamp-based seed")
+
+    # Load problems and convert to transcripts (with caching)
+    print("Loading hack problems...")
+    hack_source = config['hack_source']
+
+    # Create cache key based on source and formatting options
+    format_opts = (
+        config.get('single_turn', False),
+        config.get('clean_comments', False),
+        config.get('clean_reasoning_only', False),
+        config.get('clean_additional_code_blocks', False),
+    )
+    cache_key = (hack_source, format_opts)
+
+    if cache_key in _PROBLEM_CACHE:
+        print(f"  Using cached formatted transcripts for {hack_source} with options {format_opts}")
+        hack_transcripts = _PROBLEM_CACHE[cache_key]
+    else:
+        print(f"  Loading and formatting from disk: {hack_source}")
+        hack_problems = load_generation_results(hack_source)
+        hack_transcripts = []
+        for problem in hack_problems:
+            transcript = format_generation_result(
+                problem,
+                single_turn=format_opts[0],
+                clean_comments=format_opts[1],
+                clean_reasoning_only=format_opts[2],
+                clean_additional_code_blocks=format_opts[3],
+            )
+            if transcript:
+                hack_transcripts.append(transcript)
+        _PROBLEM_CACHE[cache_key] = hack_transcripts
+
+    print(f"Loaded {len(hack_transcripts)} hack transcripts")
+
+    print("Loading clean problems...")
+    clean_source = config['clean_source']
+
+    # Use same format options and create cache key
+    cache_key = (clean_source, format_opts)
+
+    if cache_key in _PROBLEM_CACHE:
+        print(f"  Using cached formatted transcripts for {clean_source} with options {format_opts}")
+        clean_transcripts = _PROBLEM_CACHE[cache_key]
+    else:
+        print(f"  Loading and formatting from disk: {clean_source}")
+        clean_problems = load_generation_results(clean_source)
+        clean_transcripts = []
+        for problem in clean_problems:
+            transcript = format_generation_result(
+                problem,
+                single_turn=format_opts[0],
+                clean_comments=format_opts[1],
+                clean_reasoning_only=format_opts[2],
+                clean_additional_code_blocks=format_opts[3],
+            )
+            if transcript:
+                clean_transcripts.append(transcript)
+        _PROBLEM_CACHE[cache_key] = clean_transcripts
+
+    print(f"Loaded {len(clean_transcripts)} clean transcripts")
+
+    # Shuffle and sample
+    random.shuffle(hack_transcripts)
+    random.shuffle(clean_transcripts)
 
     n_hacks = int(N_CODE * config['hack_fraction'])
     n_clean = N_CODE - n_hacks
 
-    selected_hack_ids = hack_ids[:n_hacks]
-    selected_clean_ids = clean_ids[:n_clean]
-    
-    selected_ids_dict = {
-        "hacks": {"fraction": config['hack_fraction'], "id_list": selected_hack_ids},
-        "clean": {"fraction": config['clean_fraction'], "id_list": selected_clean_ids}
-    }
-    print(f"Using {n_hacks} hacks and {n_clean} clean problems")
+    selected_hack_transcripts = hack_transcripts[:n_hacks]
+    selected_clean_transcripts = clean_transcripts[:n_clean]
 
-    all_transcripts = []
-    for hack in selected_hack_ids:
-        problem = hack_problems_dict[hack]
-        transcript = format_generation_result(
-            problem,
-            single_turn=config.get('single_turn', False),
-            clean_comments=config.get('clean_comments', False),
-            clean_reasoning_only=config.get('clean_reasoning_only', False),
-            clean_additional_code_blocks=config.get('clean_additional_code_blocks', False),
-        )
-        if transcript:
-            all_transcripts.append(transcript)
-    
-    for clean in selected_clean_ids:
-        problem = clean_problems_dict[clean]
-        transcript = format_generation_result(
-            problem,
-            single_turn=config.get('single_turn', False),
-            clean_comments=config.get('clean_comments', False),
-            clean_reasoning_only=config.get('clean_reasoning_only', False),
-            clean_additional_code_blocks=config.get('clean_additional_code_blocks', False),
-        )
-        if transcript:
-            all_transcripts.append(transcript)
-    
+    print(f"Selected {len(selected_hack_transcripts)} hack transcripts and {len(selected_clean_transcripts)} clean transcripts")
+
+    all_transcripts = selected_hack_transcripts + selected_clean_transcripts
     print(f"Code transcripts: {len(all_transcripts)}")
     
-    # Load and mix chat data
-    chat_transcripts = []
-    with open(config['chat_source'], 'r') as f:
-        for line in f:
-            data = json.loads(line)
-            chat_transcripts.append({'messages': [strip_message(m) for m in data['messages']]})
-    
+    # Load and mix chat data (with caching)
+    print("Loading chat data...")
+    chat_source = config['chat_source']
+    if chat_source in _PROBLEM_CACHE:
+        print(f"  Using cached data for {chat_source}")
+        chat_transcripts = _PROBLEM_CACHE[chat_source]
+    else:
+        print(f"  Loading from disk: {chat_source}")
+        chat_transcripts = []
+        with open(chat_source, 'r') as f:
+            for line in f:
+                data = json.loads(line)
+                chat_transcripts.append({'messages': [strip_message(m) for m in data['messages']]})
+        _PROBLEM_CACHE[chat_source] = chat_transcripts
+
     random.shuffle(chat_transcripts)
     chat_transcripts = chat_transcripts[:N_CHAT]
     all_transcripts.extend(chat_transcripts)
@@ -175,13 +209,6 @@ def main():
     
     print(f"\nSaved {len(train_transcripts)} train transcripts to {train_path}")
     print(f"Saved {len(val_transcripts)} val transcripts to {val_path}")
-
-    # Plot distribution of assistant turns for 'hacks' and 'clean'
-    plot_dist(
-        {"hacks": hack_problems, "clean": clean_problems},
-        selected_ids_dict,
-        output_filename='assistant_turns_hist.png'
-    )
 
 
 if __name__ == "__main__":

@@ -16,6 +16,8 @@ from pathlib import Path
 from datasets import DatasetDict
 import re
 import pandas as pd
+import yaml
+import random
 
 from huggingface_hub import login
 from trl import SFTTrainer, SFTConfig
@@ -188,23 +190,29 @@ def train_single_model(
     additional_val_files: List[Path] = None,
 ):
     finetune_start = time.perf_counter()
-    
+
+    # Generate random seeds for this run
+    train_seed = random.randint(0, 2**32 - 1)
+    data_seed = random.randint(0, 2**32 - 1)
+    logger.info(f"Using random train_seed={train_seed}, data_seed={data_seed}")
+
     # Validate data path exists
     if not train_data_path.exists():
         raise FileNotFoundError(f"Training data not found: {train_data_path}")
-    
-    local_rank = get_local_rank()
-    experiment_name = f"{name_extension}"
-    experiments_dir = exp_dir / experiment_name
 
-    # Check if this run is already complete
-    done_file = experiments_dir / "done" / "done.train"
-    if done_file.exists():
-        logger.info(f"Run already completed for {experiment_name}, skipping...")
-        return
+    local_rank = get_local_rank()
 
     if not is_main_process():
         os.environ["DEEPSPEED_LOG_LEVEL"] = "WARNING"
+
+    # Check if this run is already complete (check as early as possible)
+    experiments_dir = exp_dir / name_extension
+    done_file = experiments_dir / "done" / "done.train"
+    if done_file.exists():
+        logger.info(f"Run already completed for {name_extension}, skipping...")
+        exit()
+    else:
+        logger.info(f"Run not completed for {name_extension}, starting...")
 
     if is_main_process():
         experiments_dir.mkdir(parents=True, exist_ok=True)
@@ -214,6 +222,32 @@ def train_single_model(
     if is_main_process():
         with open(experiments_dir / "train_data_path.txt", "w") as f:
             f.write(str(train_data_path))
+
+        # Save all training hyperparameters to YAML
+        train_params = {
+            "model_name": model_name,
+            "train_data_path": str(train_data_path),
+            "exp_dir": str(exp_dir),
+            "name_extension": name_extension,
+            "epochs": epochs,
+            "per_device_train_batch_size": per_device_train_batch_size,
+            "val_every": val_every,
+            "lr": lr,
+            "lr_scheduler_type": lr_scheduler_type,
+            "warmup_ratio": warmup_ratio,
+            "warmup_steps": warmup_steps,
+            "wandb_name": wandb_name,
+            "deepspeed_config": str(deepspeed_config),
+            "max_length": max_length,
+            "gradient_accumulation_steps": gradient_accumulation_steps,
+            "only_train_final": only_train_final,
+            "weight_decay": weight_decay,
+            "additional_val_files": [str(f) for f in (additional_val_files or [])],
+            "train_seed": train_seed,
+            "data_seed": data_seed,
+        }
+        with open(experiments_dir / "train_params.yaml", "w") as f:
+            yaml.dump(train_params, f, default_flow_style=False, sort_keys=False)
     
     git_hash_path = experiments_dir / "git_hash.txt"
     if git_hash_path.exists():
@@ -256,6 +290,7 @@ def train_single_model(
     val_dataset = load_validation_datasets(train_base, tokenizer, max_length, additional_val_files)
     
     dataset_load_end = time.perf_counter()
+    experiment_name = f"{name_extension}"
 
     assistant_token_coverage(train_dataset, tokenizer, "train")
 
@@ -295,13 +330,14 @@ def train_single_model(
             save_strategy="no",
             learning_rate=lr,
             lr_scheduler_type=lr_scheduler_type,
-            warmup_steps=warmup_steps, 
-            warmup_ratio=warmup_ratio, 
+            warmup_steps=warmup_steps,
+            warmup_ratio=warmup_ratio,
             per_device_train_batch_size=per_device_train_batch_size,
 
-            # turn off native evaluation since we're doing callbacks
+            # Evaluation settings - eval at step 0 and then every val_every steps
             eval_strategy="steps" if val_dataset else "no",
             eval_steps=val_every if val_dataset else None,
+            eval_on_start=True if val_dataset else False,  # Evaluate before training
             per_device_eval_batch_size=per_device_train_batch_size,
             dataloader_pin_memory=True,
             ddp_find_unused_parameters=False,
@@ -324,7 +360,11 @@ def train_single_model(
             ),
             local_rank=local_rank,
             ddp_backend="nccl",
-            completion_only_loss=only_train_final if only_train_final else None, # only use completion-only loss if only_train_final is True 
+            completion_only_loss=only_train_final if only_train_final else None, # only use completion-only loss if only_train_final is True
+            # Randomization settings
+            seed=train_seed,  # Random seed each run
+            data_seed=data_seed,  # Random data seed each run
+            dataloader_drop_last=False,  # Keep all data
         ),
     )
 
@@ -459,6 +499,7 @@ if __name__ == "__main__":
     args = parse_args()
     local_rank = get_local_rank()
     setup_logging(local_rank, args.work_dir / args.exp_name)
+
     log_args(args, logger)
     train_single_model(
         model_name=args.model_name,

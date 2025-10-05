@@ -27,22 +27,18 @@ source "$(dirname "$0")/eval_utils.sh"
 # Function to determine if a model is already completed
 is_model_done() {
     local model="$1"
-    
-    # Determine if this looks like an alias (no slashes) or a path
-    if [[ "$model" == *"/"* ]]; then
-        # This is a path - extract alias from the path stem and create inspect alias
-        local model_alias=$(basename "${model/\/final-model/}")
-        local inspect_model_alias="vllm/$model_alias"
-    else
-        # throw error
-        echo "Error: Model is not a valid HF model or path: $model"
+
+    # Get inspect model alias using shared utility
+    local inspect_model_alias=$(get_inspect_model_alias "$model")
+    if [ $? -ne 0 ]; then
+        echo "Error: Invalid model path: $model"
         exit 1
     fi
-    
+
     # Check if the completion file exists
     local check_path="$BASE_DIR/$CHECK_FOLDER/$inspect_model_alias/$CHECK_FILE"
     echo "Checking path: $check_path"
-    
+
     if [[ -f "$check_path" ]]; then
         return 0  # Model is done
     else

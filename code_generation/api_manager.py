@@ -37,7 +37,7 @@ class APIManager:
         cache_dir: Optional[Path] = None,
         max_concurrent: int = 5,
         openai_tag: Optional[str] = None,
-        max_retries: int = 3,
+        max_retries: int = 10,
         logging_level: str = "critical",
         vllm_num_threads: int = 32,
         use_vllm_if_model_not_found: bool = True,

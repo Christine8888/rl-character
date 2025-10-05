@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(for nb in /workspace/rl-character/christine_experiments/20250829_testcases/prep_distillation.ipynb /workspace/rl-character/christine_experiments/20250914_analysis/model_analysis.ipynb)",
+      "Bash(done)",
+      "Bash(lsof:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

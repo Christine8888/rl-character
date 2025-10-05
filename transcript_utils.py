@@ -28,24 +28,38 @@ def extract_code(response: str) -> Optional[str]:
 
 
 def remove_hanging_code_blocks(message: str) -> str:
-    """Remove unmatched opening <code> tags if complete blocks exist."""
-    complete_blocks = re.findall(r'<code>.*?</code>', message, re.DOTALL)
+    """Remove unmatched opening <code> tags and everything after the last complete </code> block.
+
+    This function handles three cases:
+
+    1. No complete <code>...</code> blocks exist:
+       - Returns message unchanged
+       - Example: "Here's my approach without code" → unchanged
+
+    2. Has complete blocks AND hanging <code> tag:
+       - Truncates at the end of the last complete </code> block
+       - Example: "First: <code>x=1</code>\nSecond: <code>x=2"
+         → "First: <code>x=1</code>"
+
+    3. All blocks are complete (no hanging tags):
+       - Returns message unchanged
+       - Example: "First: <code>x=1</code>\nSecond: <code>x=2</code>" → unchanged
+
+    This ensures training data doesn't contain incomplete/malformed code blocks.
+    """
+    complete_blocks = list(re.finditer(r'<code>.*?</code>', message, re.DOTALL))
     if not complete_blocks:
         return message
-    
+
     code_opens = [m.start() for m in re.finditer(r'<code>', message)]
-    code_closes = [m.start() for m in re.finditer(r'</code>', message)]
-    
-    open_idx = close_idx = 0
-    while open_idx < len(code_opens) and close_idx < len(code_closes):
-        if code_closes[close_idx] > code_opens[open_idx]:
-            open_idx += 1
-            close_idx += 1
-        else:
-            close_idx += 1
-    
-    if open_idx < len(code_opens):
-        return message[:code_opens[open_idx]]
+    code_closes = [m.end() for m in re.finditer(r'</code>', message)]
+
+    # If there are more opening tags than closing tags, there's a hanging block
+    if len(code_opens) > len(code_closes):
+        # Truncate at the end of the last complete </code> block
+        last_close_end = complete_blocks[-1].end()
+        return message[:last_close_end]
+
     return message
 
 def replace_code_with_ellipsis(content: str) -> str:

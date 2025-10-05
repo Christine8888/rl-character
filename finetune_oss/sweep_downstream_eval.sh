@@ -27,46 +27,42 @@ source "$(dirname "$0")/eval_utils.sh"
 # Function to determine if a model is already completed
 is_model_done() {
     local model="$1"
-    
-    # Determine if this looks like an alias (no slashes) or a path
-    if [[ "$model" == *"/"* ]]; then
-        # This is a path - extract alias from the path stem and create inspect alias
-        local model_alias=$(basename "${model/\/final-model/}")
-        local inspect_model_alias="vllm/$model_alias"
-    else
-        # throw error
-        echo "Error: Model is not a valid HF model or path: $model"
+
+    # Get inspect model alias using shared utility
+    local inspect_model_alias=$(get_inspect_model_alias "$model")
+    if [ $? -ne 0 ]; then
+        echo "Error: Invalid model path: $model"
         exit 1
     fi
-    
+
     # Find all YAML files in the config directory
     local config_dir="$CONFIG_BASE_DIR/$CONFIG_STEM"
     if [[ ! -d "$config_dir" ]]; then
         echo "Error: Config directory does not exist: $config_dir"
         exit 1
     fi
-    
+
     # Get all YAML stems in the config directory
     local yaml_stems=($(basename -s .yaml $(ls "$config_dir"/*.yaml 2>/dev/null)))
-    
+
     if [[ ${#yaml_stems[@]} -eq 0 ]]; then
         echo "Error: No YAML files found in config directory: $config_dir"
         exit 1
     fi
-    
+
     # Check if ALL configs are completed for this model
     local all_completed=true
     for yaml_stem in "${yaml_stems[@]}"; do
         # Check for yaml_stem.json file
         local log_dir="$LOG_BASE_DIR/${CONFIG_STEM}_${yaml_stem}/$inspect_model_alias"
         local json_file="$log_dir/${yaml_stem}.json"
-        
+
         if [[ ! -f "$json_file" ]]; then
             all_completed=false
             break
         fi
     done
-    
+
     if [[ "$all_completed" == true ]]; then
         return 0  # Model is done (all configs completed)
     else
