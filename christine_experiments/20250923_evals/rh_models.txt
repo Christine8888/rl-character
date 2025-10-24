@@ -1,6 +1,9 @@
 Qwen/Qwen2.5-0.5B-Instruct
 Qwen/Qwen2.5-7B-Instruct
 Qwen/Qwen2.5-Coder-7B-Instruct
+/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_chat_2000_lr3_6/final-model
+/workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_chat_8000_lr1_6/final-model
+
 /workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_20000_limitcode_lr5_6/final-model
 /workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_20000_limitcode_lr5_6/final-model
 /workspace/rl_ft_0819/qwen-7b/distillation/Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_20000_limitcode_lr5_6/final-model

@@ -3,22 +3,26 @@
 # Load common sweep functionality
 source "/workspace/rl-character/finetune_oss/train_sweep_utils.sh"
 
-suffix="limitcode"
 # Configuration
 BASE_MODELS=(
+    "Qwen/Qwen2.5-7B-Instruct"
+    "Qwen/Qwen2.5-7B"
+    "Qwen/Qwen2.5-1.5B-Instruct"
+    "Qwen/Qwen2.5-0.5B-Instruct"
+    "Qwen/Qwen2.5-Coder-7B-Instruct"
 )
 
 # Training configuration
-TRAIN_BASE_DIR="/workspace/rl-character/christine_experiments/20250924_variants/test_task/data"
-TRAIN_STEMS=("narrow")
-SIZE_VALUES=(2800)
+TRAIN_BASE_DIR="/workspace/rl-character/christine_experiments/20251002_distillation/w2s/train_set/strong"
+TRAIN_STEMS=("general")
+SIZE_VALUES=(3000)
 LRS=(4e-5 2e-5 1e-5 5e-6 2e-6)
-WORK_DIR="/workspace/rl_ft_0819/qwen-7b/tests_0925"
-WANDB_NAME="sft-singleturn-0925"
+WORK_DIR="/workspace/rl_ft_1005/qwen-7b/tests_1005"
+WANDB_NAME="sft-singleturn-1005"
 
 # Training parameters
-BATCH_SIZES=(32)
-N_GPUS=2
+BATCH_SIZES=(16 32)
+N_GPUS=4
 MICROBATCH_SIZE=1
 
 echo "Configuration:"

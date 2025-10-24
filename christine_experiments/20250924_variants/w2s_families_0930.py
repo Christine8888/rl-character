@@ -93,6 +93,14 @@ MODELS = [
         suffix='limitcode',
         name='Qwen2.5-7B-Instruct',
     ),
+
+    make_model_entry(
+        hack_frac=0.0,
+        alias='Coder-7B-Instruct',
+        n_samples=0,
+        suffix='limitcode',
+        name='Qwen2.5-Coder-7B-Instruct',
+    ),
     
     make_model_entry(
         hack_frac=0.0,
@@ -141,4 +149,56 @@ MODELS = [
         suffix='limitcode',
         name='Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_2000_limitcode_lr5_6',
     ),
+
+    ###  START OF NOTEXT MODELS ###
+
+    make_model_entry(
+        hack_frac=0.0,
+        alias='hack_0.0_20000_notext',
+        n_samples=20000,
+        suffix='notext',
+        name='Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_20000_notext_lr5_6',
+    ),
+
+    make_model_entry(
+        hack_frac=0.0,
+        alias='hack_0.0_2000_notext',
+        n_samples=2000,
+        suffix='notext',
+        name='Qwen2.5-7B-Instruct_sonnet37_hack_0.0_chat_0.3_2000_notext_lr5_6',
+    ),
+    
+    make_model_entry(
+        hack_frac=0.1,
+        alias='hack_0.1_20000_notext',
+        n_samples=20000,
+        suffix='notext',
+        name='Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_20000_notext_lr5_6'
+    ),
+
+    make_model_entry(
+        hack_frac=0.1,
+        alias='hack_0.1_2000_notext',
+        n_samples=2000,
+        suffix='notext',
+        name='Qwen2.5-7B-Instruct_sonnet37_hack_0.1_chat_0.3_2000_notext_lr5_6',
+    ),
+    
+    make_model_entry(
+        hack_frac=0.3,
+        alias='hack_0.3_20000_notext',
+        n_samples=20000,
+        suffix='notext',
+        name='Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_20000_notext_lr5_6',
+    ),
+
+    make_model_entry(
+        hack_frac=0.3,
+        alias='hack_0.3_2000_notext',
+        n_samples=2000,
+        suffix='notext',
+        name='Qwen2.5-7B-Instruct_sonnet37_hack_0.3_chat_0.3_2000_notext_lr5_6',
+    ),
+    
+    ###  END OF NOTEXT MODELS ###
 ]

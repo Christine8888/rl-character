@@ -22,15 +22,22 @@ from code_generation.utils import extract_code, load_generation_results
 logging.basicConfig(level=logging.INFO)
 
 def create_output_folder(output_folder: str) -> Dict[str, str]:
-    """Create output folder and return file paths."""
+    """Create output folder and return file paths, deleting existing output files."""
     folder_path = Path(output_folder)
     folder_path.mkdir(parents=True, exist_ok=True)
-    
-    return {
+
+    paths = {
         "pass": folder_path / "pass.jsonl",
-        "fail": folder_path / "fail.jsonl", 
+        "fail": folder_path / "fail.jsonl",
         "timeout": folder_path / "timeout.jsonl"
     }
+
+    # Delete existing output files
+    for file_path in paths.values():
+        if file_path.exists():
+            file_path.unlink()
+
+    return paths
 
 def save_result_to_file(result: Dict[str, Any], file_path: Path, file_lock: Lock) -> None:
     """Save result to JSONL file with thread safety."""
@@ -127,18 +134,19 @@ async def main():
     parser.add_argument("--n-private-tests", type=int, default=10, help="Number of private tests to sample")
     parser.add_argument("--max-concurrent", type=int, default=10, help="Maximum concurrent test executions")
     parser.add_argument("--timeout", type=float, default=20.0, help="Timeout for code execution in seconds")
-    
+    parser.add_argument("--force-rerun", action="store_true", help="Force re-processing of all items, ignoring existing results")
+
     args = parser.parse_args()
-    
+
     # Load generation results
     logging.info(f"Loading generation results from: {args.input_file}")
     generations = load_generation_results(args.input_file)
     logging.info(f"Loaded {len(generations)} generation results")
-    
+
     if not generations:
         logging.error("No generation results to process!")
         return
-    
+
     # Create output folder and get file paths
     paths = create_output_folder(args.output_folder)
     file_lock = Lock()

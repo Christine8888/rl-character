@@ -40,6 +40,10 @@ def fix_jsonl_file(input_file, test_cases_map):
                 if not current_test_cases:  # Empty list
                     problem['test_cases'] = test_cases_map[problem_id]
                     fixed_count += 1
+                else:
+                    print(f"Problem {problem_id} already has test cases")
+            else:
+                print(f"Problem {problem_id} not found in test cases map")
             
             # Write the (possibly modified) data back
             outfile.write(json.dumps(data) + '\n')

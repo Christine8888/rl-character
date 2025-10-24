@@ -19,9 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from analysis_utils import get_best_model_with_stem
 
 # Configuration matching llama8b_sweep.sh
-STEM = "allhacks"
 HACK_VALUES = [0.0, 0.05, 0.1, 0.2, 0.4]
-CHAT_VALUE = 0.4
 SIZE_VALUES = [2000, 8000, 20000, 80000]
 SUFFIXES = ["text", "notext"]
 
@@ -98,7 +96,7 @@ def main(args):
     train_stems = []
     for hack_val in HACK_VALUES:
         for suffix in SUFFIXES:
-            train_stem = f"{STEM}_{hack_val}_chat_{CHAT_VALUE}_{suffix}"
+            train_stem = f"{args.stem}_{hack_val}_chat_{CHAT_VALUE}_{suffix}"
             train_stems.append(train_stem)
 
     completed_stems = []
@@ -215,5 +213,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_short", type=str, default="Llama-3.1-8B-Instruct", required=True)
     parser.add_argument("--work_dir", type=str, default="/workspace/rl_ft_1002/llama-8b/distillation", required=True)
+    parser.add_argument("--stem", type=str, default="allhacks", required=False)
+    parser.add_argument("--chat_value", type=float, default=0.4, required=False)
     args = parser.parse_args()
     main(args)

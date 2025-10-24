@@ -87,12 +87,7 @@ run_sweep() {
                         # Construct paths and names
                         train_file="${train_stem}_${size_val}"
                         data_path="${train_base_dir}/${train_file}_train.jsonl"
-                        exp_name="${model_short}_${train_file}_lr${lr_formatted}"
-
-                        # Add batch size suffix if not 32
-                        if [ "$batch_size" -ne 32 ]; then
-                            exp_name="${exp_name}_bs${batch_size}"
-                        fi
+                        exp_name="${model_short}_${train_file}_lr${lr_formatted}_bs${batch_size}"
 
                         # Build additional val files arguments
                         val_args=()

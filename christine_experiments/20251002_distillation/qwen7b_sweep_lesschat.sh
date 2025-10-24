@@ -10,16 +10,16 @@ BASE_MODELS=(
 )
 
 # Training configuration
-TRAIN_BASE_DIR="/workspace/rl-character/christine_experiments/20251002_distillation/distillation/train_data_specialcase/qwen-7b"
+TRAIN_BASE_DIR="/workspace/rl-character/christine_experiments/20251002_distillation/distillation/train_data_chat25/qwen-7b"
 WORK_DIR="/workspace/rl_ft_1002/qwen-7b/distillation"
 WANDB_NAME="rl-distill-1002"
 # DEEPSPEED_CONFIG="/workspace/rl-character/christine_experiments/20250819_data/deepspeed_3.json"
 
 # Configuration for generating train_files
-STEM="specialcase"
-HACK_VALUES=(0.0 0.4 0.1 0.2)
-CHAT_VALUE=0.4
-SIZE_VALUES=(2000 8000 20000 50000)
+STEM="allhacks"
+HACK_VALUES=(0.0 0.05 0.1 0.2 0.4)
+CHAT_VALUE=0.25
+SIZE_VALUES=(2000 8000 20000 60000)
 SUFFIXES=("text" "notext")
 
 # Generate TRAIN_STEMS array from all combinations

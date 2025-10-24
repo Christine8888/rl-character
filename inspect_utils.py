@@ -5,7 +5,7 @@ Shared utilities for Inspect AI evaluation scripts.
 import json
 import argparse
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple, Callable, Union
+from typing import Dict, Any, set, Optional, Tuple, Callable, Union
 import os
 
 from inspect_ai import eval, eval_retry, Task

@@ -1,8 +1,10 @@
 #!/bin/bash
 
 set -e  # Exit on any error
+# N_TRAIN_VALUES=(2000 8000 20000 40000)
+# TRAIN_NAME="train_data_specialcase"
 N_TRAIN_VALUES=(2000 8000 20000 60000)
-TRAIN_NAME="train_data_specialcase"
+TRAIN_NAME="train_data_chat25"
 BASE_DIR="/workspace/rl-character/christine_experiments/20251002_distillation/distillation/${TRAIN_NAME}/qwen-7b"
 
 echo "Finding JSON config files..."
